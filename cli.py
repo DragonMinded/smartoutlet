@@ -5,6 +5,7 @@ import sys
 
 from smartoutlet import ALL_OUTLET_CLASSES
 
+
 def cli(mode: str) -> int:
     outlettypes = ', '.join(c.type for c in ALL_OUTLET_CLASSES)
 
@@ -67,7 +68,7 @@ def cli(mode: str) -> int:
             "state",
             metavar="STATE",
             type=str,
-            help=f"the state you want to set the outlet to, valid values are on and off",
+            help="the state you want to set the outlet to, valid values are on and off",
         )
     args = vars(parser.parse_args())
     if mode == "set":
