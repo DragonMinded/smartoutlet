@@ -1,5 +1,5 @@
 import requests
-from typing import ClassVar, Dict, Optional
+from typing import ClassVar, Dict, Optional, cast
 
 from .interface import OutletInterface
 
@@ -27,6 +27,15 @@ class NP02BOutlet(OutletInterface):
             'username': self.username,
             'password': self.password,
         }
+
+    @staticmethod
+    def deserialize(vals: Dict[str, object]) -> OutletInterface:
+        return NP02BOutlet(
+            host=cast(str, vals['host']),
+            outlet=cast(int, vals['outlet']),
+            username=cast(str, vals['username']),
+            password=cast(str, vals['password']),
+        )
 
     def getState(self) -> Optional[bool]:
         try:

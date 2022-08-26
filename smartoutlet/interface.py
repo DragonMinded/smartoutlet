@@ -9,6 +9,11 @@ class OutletInterface(ABC):
     def serialize(self) -> Dict[str, object]:
         ...
 
+    @staticmethod
+    @abstractmethod
+    def deserialize(vals: Dict[str, object]) -> "OutletInterface":
+        ...
+
     @abstractmethod
     def getState(self) -> Optional[bool]:
         ...

@@ -1,6 +1,6 @@
 import pysnmp.hlapi as snmplib  # type: ignore
 import pysnmp.proto.rfc1902 as rfc1902  # type: ignore
-from typing import ClassVar, Dict, Optional
+from typing import ClassVar, Dict, Optional, cast
 
 from .interface import OutletInterface
 
@@ -48,6 +48,20 @@ class SNMPOutlet(OutletInterface):
             'read_community': self.read_community,
             'write_community': self.write_community,
         }
+
+    @staticmethod
+    def deserialize(vals: Dict[str, object]) -> OutletInterface:
+        return SNMPOutlet(
+            host=cast(str, vals['host']),
+            query_oid=cast(str, vals['query_oid']),
+            query_on_value=vals['query_on_value'],
+            query_off_value=vals['query_off_value'],
+            update_oid=cast(str, vals['update_oid']),
+            update_on_value=vals['update_on_value'],
+            update_off_value=vals['update_off_value'],
+            read_community=cast(str, vals['read_community']),
+            write_community=cast(str, vals['write_community']),
+        )
 
     def query(self, value: object) -> Optional[object]:
         if isinstance(self.query_on_value, int):

@@ -1,4 +1,4 @@
-from typing import ClassVar, Dict, Optional
+from typing import ClassVar, Dict, Optional, cast
 
 from .interface import OutletInterface
 from .snmp import SNMPOutlet
@@ -34,6 +34,15 @@ class AP7900Outlet(OutletInterface):
             'read_community': self.read_community,
             'write_community': self.write_community,
         }
+
+    @staticmethod
+    def deserialize(vals: Dict[str, object]) -> OutletInterface:
+        return AP7900Outlet(
+            host=cast(str, vals['host']),
+            outlet=cast(int, vals['outlet']),
+            read_community=cast(str, vals['read_community']),
+            write_community=cast(str, vals['write_community']),
+        )
 
     def getState(self) -> Optional[bool]:
         return self.snmp.getState()
