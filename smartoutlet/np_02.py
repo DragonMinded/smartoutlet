@@ -13,20 +13,18 @@ class NP02Outlet(OutletInterface):
         *,
         host: str,
         outlet: int,
-        read_community: str = "public",
-        write_community: str = "public",
+        # Yes, they only support one community for read and write.
+        community: str = "public",
     ) -> None:
         self.host = host
         self.outlet = outlet
-        self.read_community = read_community
-        self.write_community = write_community
+        self.community = community
 
     def serialize(self) -> Dict[str, object]:
         return {
             'host': self.host,
             'outlet': self.outlet,
-            'read_community': self.read_community,
-            'write_community': self.write_community,
+            'community': self.community,
         }
 
     @staticmethod
@@ -34,8 +32,7 @@ class NP02Outlet(OutletInterface):
         return NP02Outlet(
             host=cast(str, vals['host']),
             outlet=cast(int, vals['outlet']),
-            read_community=cast(str, vals['read_community']),
-            write_community=cast(str, vals['write_community']),
+            community=cast(str, vals['community']),
         )
 
     def query(self, value: object) -> Optional[int]:
@@ -50,7 +47,7 @@ class NP02Outlet(OutletInterface):
     def getState(self) -> Optional[bool]:
         iterator = snmplib.getCmd(
             snmplib.SnmpEngine(),
-            snmplib.CommunityData(self.read_community, mpModel=0),
+            snmplib.CommunityData(self.community, mpModel=0),
             snmplib.UdpTransportTarget((self.host, 161), timeout=1.0, retries=0),
             snmplib.ContextData(),
             snmplib.ObjectType(snmplib.ObjectIdentity(f"1.3.6.1.4.1.21728.2.4.1.2.1.1.3.{self.outlet}")),
@@ -79,7 +76,7 @@ class NP02Outlet(OutletInterface):
     def setState(self, state: bool) -> None:
         iterator = snmplib.setCmd(
             snmplib.SnmpEngine(),
-            snmplib.CommunityData(self.write_community, mpModel=0),
+            snmplib.CommunityData(self.community, mpModel=0),
             snmplib.UdpTransportTarget((self.host, 161)),
             snmplib.ContextData(),
             snmplib.ObjectType(snmplib.ObjectIdentity(f"1.3.6.1.4.1.21728.2.4.1.2.1.1.4.{self.outlet}"), self.update(state)),
