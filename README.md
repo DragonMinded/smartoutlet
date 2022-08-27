@@ -4,7 +4,7 @@ Collection of utilities for interfacing with various PDUs and smart outlets. Mea
 
 ## CLI
 
-A pair of command-line scripts are included that can probe or set the state of any supported outlet type. These can be used from the "command_line" platform of Home Assistant as long as you make sure this package is installed in your installation's venv and that `fetchoutlet` and `setoutlet` are located in the home directory of your Home Installation setup. Some example uses are as follows.
+A pair of command-line scripts are included that can probe or set the state of any supported outlet type. These can be used from the "command_line" platform of Home Assistant as long as you make sure this package is installed in your installation's venv and that `fetchoutlet` and `setoutlet` are located in the home directory of your Home Assistant setup. Some example uses are as follows.
 
 Fetch the status of the first outlet on a Synaccess NP-02B PDU that is at 10.0.0.100:
 
@@ -12,7 +12,7 @@ Fetch the status of the first outlet on a Synaccess NP-02B PDU that is at 10.0.0
 ./fetchoutlet np-02b 10.0.0.100 1
 ```
 
-This will return the string "on" when the outlet is on, and "off" when the outlet is off.
+This will print the string "on" to stdout when the outlet is on, and "off" when the outlet is off.
 
 Turn on the third outlet of an APC AP7900 PDU that is at 10.0.0.125:
 
