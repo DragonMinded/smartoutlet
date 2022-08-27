@@ -79,7 +79,7 @@ class SNMPOutlet(OutletInterface):
     def getState(self) -> Optional[bool]:
         iterator = snmplib.getCmd(
             snmplib.SnmpEngine(),
-            snmplib.CommunityData(self.read_community),
+            snmplib.CommunityData(self.read_community, mpModel=0),
             snmplib.UdpTransportTarget((self.host, 161), timeout=1.0, retries=0),
             snmplib.ContextData(),
             snmplib.ObjectType(snmplib.ObjectIdentity(self.query_oid)),
@@ -104,7 +104,7 @@ class SNMPOutlet(OutletInterface):
     def setState(self, state: bool) -> None:
         iterator = snmplib.setCmd(
             snmplib.SnmpEngine(),
-            snmplib.CommunityData(self.write_community),
+            snmplib.CommunityData(self.write_community, mpModel=0),
             snmplib.UdpTransportTarget((self.host, 161)),
             snmplib.ContextData(),
             snmplib.ObjectType(snmplib.ObjectIdentity(self.update_oid), self.update(state)),

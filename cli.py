@@ -85,7 +85,7 @@ def cli(mode: str) -> int:
                     continue
                 constructor_args[param.name] = args[param.name]
 
-            inst = clz(**constructor_args)
+            inst = clz.deserialize(constructor_args)
 
             if mode == "fetch":
                 state = inst.getState()
