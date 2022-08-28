@@ -38,18 +38,25 @@ class NP02BOutlet(OutletInterface):
             password=cast(str, vals['password']),
         )
 
-    def getState(self) -> Optional[bool]:
-        try:
-            response = requests.get(
-                f"http://{self.username}:{self.password}@{self.host}/cmd.cgi?$A5",
-                timeout=1.0,
-            ).content.decode('utf-8').strip()
-        except (requests.exceptions.ConnectTimeout, requests.exceptions.ConnectionError):
-            return None
+    def getState(self, force_legacy: bool = False) -> Optional[bool]:
+        # We allow a force-legacy option here, because we call getState from within
+        # setState, and if we have to call this we already know that it's a legacy
+        # NP-02B. So, stop wasting time figuring that out a second time!
+        if not force_legacy:
+            try:
+                response = requests.get(
+                    f"http://{self.username}:{self.password}@{self.host}/cmd.cgi?$A5",
+                    timeout=1.0,
+                ).content.decode('utf-8').strip()
+            except (requests.exceptions.ConnectTimeout, requests.exceptions.ConnectionError):
+                return None
+        else:
+            # Shouldn't ever get to the bottom stanza, but lets be sure anyway.
+            response = "$"
 
         # There are two types of response here, if it returns "Success!" then
         # it doesn't respond to the correct documented protocol.
-        if response == "Success!":
+        if force_legacy or response == "Success!":
             relay = f"rly{self.outlet - 1}"
             response = requests.get(
                 f"http://{self.username}:{self.password}@{self.host}/status.xml",
@@ -81,7 +88,7 @@ class NP02BOutlet(OutletInterface):
         if response == "Success!":
             # This outlet is not responding to the correct documented protocol,
             # we must query the status and then flip the relay if needed.
-            actual = self.getState()
+            actual = self.getState(force_legacy=True)
             if actual is None:
                 # Couldn't query, so don't want to mess with toggling the relay.
                 return
