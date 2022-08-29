@@ -4,7 +4,6 @@ import os
 import sys
 
 from smartoutlet import ALL_OUTLET_CLASSES
-from smartoutlet.daemon import OutletProxy
 
 
 def cli(mode: str) -> int:
@@ -86,29 +85,28 @@ def cli(mode: str) -> int:
         state = args['state'].lower() == "on"
         del args['state']
 
-    for clz in ALL_OUTLET_CLASSES:
-        if clz.type.lower() == knownargs.type.lower():
-            # Figure out arguments to add for this outlet.
-            signature = inspect.signature(clz.__init__)
-            constructor_args = {}
-            for param in signature.parameters.values():
-                if param.name == "self":
-                    continue
-                constructor_args[param.name] = args[param.name]
+    # Figure out arguments to add for this outlet.
+    signature = inspect.signature(clz.__init__)
+    constructor_args = {}
+    for param in signature.parameters.values():
+        if param.name == "self":
+            continue
+        constructor_args[param.name] = args[param.name]
 
-            if args['daemon']:
-                inst = OutletProxy.deserialize({'type': clz.type, **constructor_args})
-            else:
-                inst = clz.deserialize(constructor_args)
+    if args['daemon']:
+        # Import this here so we don't pay the cost otherwise.
+        from smartoutlet.daemon import OutletProxy
+        inst = OutletProxy.deserialize({'type': clz.type, **constructor_args})
+    else:
+        inst = clz.deserialize(constructor_args)
 
-            if mode == "fetch":
-                state = inst.getState()
-                if state is None:
-                    print("unknown")
-                else:
-                    print("on" if state else "off")
-                break
-            else:
-                inst.setState(state)
+    if mode == "fetch":
+        state = inst.getState()
+        if state is None:
+            print("unknown")
+        else:
+            print("on" if state else "off")
+    else:
+        inst.setState(state)
 
     return 0

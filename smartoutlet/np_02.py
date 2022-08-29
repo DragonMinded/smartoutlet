@@ -1,5 +1,3 @@
-import pysnmp.hlapi as snmplib  # type: ignore
-import pysnmp.proto.rfc1902 as rfc1902  # type: ignore
 from typing import ClassVar, Dict, Optional, cast
 
 from .interface import OutletInterface
@@ -19,6 +17,12 @@ class NP02Outlet(OutletInterface):
         self.host = host
         self.outlet = outlet
         self.community = community
+
+        # Import these here to pay less cost to startup time.
+        import pysnmp.hlapi as snmplib  # type: ignore
+        import pysnmp.proto.rfc1902 as rfc1902  # type: ignore
+        self.snmplib = snmplib
+        self.rfc1902 = rfc1902
 
     def serialize(self) -> Dict[str, object]:
         return {
@@ -42,15 +46,15 @@ class NP02Outlet(OutletInterface):
             return None
 
     def update(self, value: bool) -> object:
-        return rfc1902.Integer(1 if value else 2)
+        return self.rfc1902.Integer(1 if value else 2)
 
     def getState(self) -> Optional[bool]:
-        iterator = snmplib.getCmd(
-            snmplib.SnmpEngine(),
-            snmplib.CommunityData(self.community, mpModel=0),
-            snmplib.UdpTransportTarget((self.host, 161), timeout=1.0, retries=0),
-            snmplib.ContextData(),
-            snmplib.ObjectType(snmplib.ObjectIdentity(f"1.3.6.1.4.1.21728.2.4.1.2.1.1.3.{self.outlet}")),
+        iterator = self.snmplib.getCmd(
+            self.snmplib.SnmpEngine(),
+            self.snmplib.CommunityData(self.community, mpModel=0),
+            self.snmplib.UdpTransportTarget((self.host, 161), timeout=1.0, retries=0),
+            self.snmplib.ContextData(),
+            self.snmplib.ObjectType(self.snmplib.ObjectIdentity(f"1.3.6.1.4.1.21728.2.4.1.2.1.1.3.{self.outlet}")),
         )
 
         for response in iterator:
@@ -74,11 +78,11 @@ class NP02Outlet(OutletInterface):
         return None
 
     def setState(self, state: bool) -> None:
-        iterator = snmplib.setCmd(
-            snmplib.SnmpEngine(),
-            snmplib.CommunityData(self.community, mpModel=0),
-            snmplib.UdpTransportTarget((self.host, 161)),
-            snmplib.ContextData(),
-            snmplib.ObjectType(snmplib.ObjectIdentity(f"1.3.6.1.4.1.21728.2.4.1.2.1.1.4.{self.outlet}"), self.update(state)),
+        iterator = self.snmplib.setCmd(
+            self.snmplib.SnmpEngine(),
+            self.snmplib.CommunityData(self.community, mpModel=0),
+            self.snmplib.UdpTransportTarget((self.host, 161)),
+            self.snmplib.ContextData(),
+            self.snmplib.ObjectType(self.snmplib.ObjectIdentity(f"1.3.6.1.4.1.21728.2.4.1.2.1.1.4.{self.outlet}"), self.update(state)),
         )
         next(iterator)

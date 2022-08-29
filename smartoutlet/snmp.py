@@ -1,5 +1,3 @@
-import pysnmp.hlapi as snmplib  # type: ignore
-import pysnmp.proto.rfc1902 as rfc1902  # type: ignore
 from typing import ClassVar, Dict, Optional, cast
 
 from .interface import OutletInterface
@@ -30,6 +28,12 @@ class SNMPOutlet(OutletInterface):
         self.update_off_value = update_off_value
         self.read_community = read_community
         self.write_community = write_community
+
+        # Import this here to pay less startup time cost.
+        import pysnmp.hlapi as snmplib  # type: ignore
+        import pysnmp.proto.rfc1902 as rfc1902  # type: ignore
+        self.snmplib = snmplib
+        self.rfc1902 = rfc1902
 
         if type(query_on_value) != type(query_off_value):
             raise Exception("Unexpected differing types for query on and off values!")
@@ -73,16 +77,16 @@ class SNMPOutlet(OutletInterface):
 
     def update(self, value: bool) -> object:
         if isinstance(self.update_on_value, int):
-            return rfc1902.Integer(self.update_on_value if value else self.update_off_value)
+            return self.rfc1902.Integer(self.update_on_value if value else self.update_off_value)
         raise NotImplementedError(f"Type of update value {type(self.update_on_value)} not supported!")
 
     def getState(self) -> Optional[bool]:
-        iterator = snmplib.getCmd(
-            snmplib.SnmpEngine(),
-            snmplib.CommunityData(self.read_community, mpModel=0),
-            snmplib.UdpTransportTarget((self.host, 161), timeout=1.0, retries=0),
-            snmplib.ContextData(),
-            snmplib.ObjectType(snmplib.ObjectIdentity(self.query_oid)),
+        iterator = self.snmplib.getCmd(
+            self.snmplib.SnmpEngine(),
+            self.snmplib.CommunityData(self.read_community, mpModel=0),
+            self.snmplib.UdpTransportTarget((self.host, 161), timeout=1.0, retries=0),
+            self.snmplib.ContextData(),
+            self.snmplib.ObjectType(self.snmplib.ObjectIdentity(self.query_oid)),
         )
 
         for response in iterator:
@@ -102,11 +106,11 @@ class SNMPOutlet(OutletInterface):
         return None
 
     def setState(self, state: bool) -> None:
-        iterator = snmplib.setCmd(
-            snmplib.SnmpEngine(),
-            snmplib.CommunityData(self.write_community, mpModel=0),
-            snmplib.UdpTransportTarget((self.host, 161)),
-            snmplib.ContextData(),
-            snmplib.ObjectType(snmplib.ObjectIdentity(self.update_oid), self.update(state)),
+        iterator = self.snmplib.setCmd(
+            self.snmplib.SnmpEngine(),
+            self.snmplib.CommunityData(self.write_community, mpModel=0),
+            self.snmplib.UdpTransportTarget((self.host, 161)),
+            self.snmplib.ContextData(),
+            self.snmplib.ObjectType(self.snmplib.ObjectIdentity(self.update_oid), self.update(state)),
         )
         next(iterator)

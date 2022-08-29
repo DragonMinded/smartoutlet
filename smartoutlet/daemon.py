@@ -9,7 +9,7 @@ from . import ALL_OUTLET_CLASSES
 from .interface import OutletInterface
 
 
-PROXY_VERSION: Final[int] = 1
+PROXY_VERSION: Final[int] = 2
 PROXY_PORT: Final[int] = 54545
 
 
@@ -99,6 +99,7 @@ class OutletProxy(OutletInterface):
 class OutletDaemon:
     def __init__(self) -> None:
         self.registered_outlets: Dict[str, OutletInterface] = {}
+        self.cached_states: Dict[str, Optional[bool]] = {}
 
     def checkVersion(self, proxy_version: int) -> bool:
         if proxy_version == PROXY_VERSION:
@@ -129,9 +130,15 @@ class OutletDaemon:
         return self.registered_outlets[key]
 
     def getState(self, vals: Dict[str, object]) -> Optional[bool]:
-        outlet = self.__getClass(vals)
-        return outlet.getState()
+        key = self.__getKey(vals)
+        if key not in self.cached_states:
+            outlet = self.__getClass(vals)
+            self.cached_states[key] = outlet.getState()
+
+        return self.cached_states[key]
 
     def setState(self, vals: Dict[str, object], state: bool) -> None:
+        key = self.__getKey(vals)
         outlet = self.__getClass(vals)
         outlet.setState(state)
+        self.cached_states[key] = outlet.getState()

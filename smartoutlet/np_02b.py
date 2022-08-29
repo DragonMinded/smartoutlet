@@ -1,5 +1,3 @@
-import requests
-import xml.etree.ElementTree as ET
 from typing import ClassVar, Dict, Optional, cast
 
 from .interface import OutletInterface
@@ -20,6 +18,12 @@ class NP02BOutlet(OutletInterface):
         self.outlet = outlet
         self.username = username
         self.password = password
+
+        # Import these here to pay less cost in import time.
+        import requests
+        import xml.etree.ElementTree as ET
+        self.requests = requests
+        self.ET = ET
 
     def serialize(self) -> Dict[str, object]:
         return {
@@ -44,11 +48,11 @@ class NP02BOutlet(OutletInterface):
         # NP-02B. So, stop wasting time figuring that out a second time!
         if not force_legacy:
             try:
-                response = requests.get(
+                response = self.requests.get(
                     f"http://{self.username}:{self.password}@{self.host}/cmd.cgi?$A5",
                     timeout=1.0,
                 ).content.decode('utf-8').strip()
-            except (requests.exceptions.ConnectTimeout, requests.exceptions.ConnectionError):
+            except (self.requests.exceptions.ConnectTimeout, self.requests.exceptions.ConnectionError):
                 return None
         else:
             # Shouldn't ever get to the bottom stanza, but lets be sure anyway.
@@ -58,12 +62,12 @@ class NP02BOutlet(OutletInterface):
         # it doesn't respond to the correct documented protocol.
         if force_legacy or response == "Success!":
             relay = f"rly{self.outlet - 1}"
-            response = requests.get(
+            response = self.requests.get(
                 f"http://{self.username}:{self.password}@{self.host}/status.xml",
                 timeout=1.0
             ).content.decode('utf-8')
 
-            root = ET.fromstring(response)
+            root = self.ET.fromstring(response)
             if root.tag == "response":
                 for child in root:
                     if child.tag == relay:
@@ -78,11 +82,11 @@ class NP02BOutlet(OutletInterface):
 
     def setState(self, state: bool) -> None:
         try:
-            response = requests.get(
+            response = self.requests.get(
                 f"http://{self.username}:{self.password}@{self.host}/cmd.cgi?$A3 {self.outlet} {'1' if state else '0'}",
                 timeout=1.0
             ).content.decode('utf-8').strip()
-        except (requests.exceptions.ConnectTimeout, requests.exceptions.ConnectionError):
+        except (self.requests.exceptions.ConnectTimeout, self.requests.exceptions.ConnectionError):
             return
 
         if response == "Success!":
@@ -96,6 +100,6 @@ class NP02BOutlet(OutletInterface):
             if actual != state:
                 try:
                     # Need to toggle
-                    requests.get(f"http://{self.username}:{self.password}@{self.host}/cmd.cgi?rly={self.outlet - 1}", timeout=1.0)
-                except (requests.exceptions.ConnectTimeout, requests.exceptions.ConnectionError):
+                    self.requests.get(f"http://{self.username}:{self.password}@{self.host}/cmd.cgi?rly={self.outlet - 1}", timeout=1.0)
+                except (self.requests.exceptions.ConnectTimeout, self.requests.exceptions.ConnectionError):
                     pass

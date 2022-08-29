@@ -1,7 +1,6 @@
 from typing import ClassVar, Dict, Optional, cast
 
 from .interface import OutletInterface
-from .snmp import SNMPOutlet
 
 
 class AP7900Outlet(OutletInterface):
@@ -10,6 +9,9 @@ class AP7900Outlet(OutletInterface):
     def __init__(self, *, host: str, outlet: int, read_community: str = "public", write_community: str = "private") -> None:
         if outlet < 1 or outlet > 8:
             raise Exception("Out of bounds outlet number!")
+
+        # Import this here to pay less cost to speed of startup.
+        from .snmp import SNMPOutlet
 
         self.host = host
         self.outlet = outlet
