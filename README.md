@@ -51,3 +51,5 @@ switch:
             mdi:light-switch-off
           {% endif %}
 ```
+
+If you have a large number of switches, you can speed up Home Assistant's polling and operation of them by adding `--daemon` to both the fetchoutlet and setoutlet calls. This works only on OSX/Linux and will start a separate process that monitors and caches the values of each of your queried/set outlets automatically, making Home Assistant appear more responsive. This is necessary as Home Assistant polls all switches sequentially and only sends update commands between a full poll cycle. So, of you have lots of switches and they take awhile to respond, you will notice very slow operation of your switches unless you activate daemon mode.
