@@ -6,22 +6,8 @@ import sys
 from smartoutlet import ALL_OUTLET_CLASSES
 
 
-def cli(mode: str) -> int:
-    outlettypes = ', '.join(c.type for c in ALL_OUTLET_CLASSES)
-
-    if mode == "fetch":
-        parser = argparse.ArgumentParser(description="Fetch the state of a smart outlet or PDU.", add_help=False)
-    else:
-        parser = argparse.ArgumentParser(description="Set the state of a smart outlet or PDU.", add_help=False)
-
-    parser.add_argument(
-        "type",
-        metavar="TYPE",
-        type=str,
-        nargs="?",
-        default="",
-        help=f"the type of outlet you are controlling, valid values are {outlettypes}",
-    )
+def addargs(parser: argparse.ArgumentParser) -> None:
+    logloc = os.path.abspath(os.path.join(os.getcwd(), "daemon.log"))
     parser.add_argument(
         "--daemon",
         action="store_true",
@@ -33,6 +19,32 @@ def cli(mode: str) -> int:
         type=int,
         help="the port which the daemon will listen on, defaults to 54545",
     )
+    parser.add_argument(
+        "--log",
+        metavar="LOG",
+        type=str,
+        default=logloc,
+        help=f"the logfile we will write daemon logs to, defaults to {logloc}",
+    )
+
+
+def cli(mode: str) -> int:
+    outlettypes = ', '.join(c.type for c in ALL_OUTLET_CLASSES)
+
+    if mode == "fetch":
+        parser = argparse.ArgumentParser(description="Fetch the state of a smart outlet or PDU.", add_help=False)
+    else:
+        parser = argparse.ArgumentParser(description="Set the state of a smart outlet or PDU.", add_help=False)
+    parser.add_argument(
+        "type",
+        metavar="TYPE",
+        type=str,
+        nargs="?",
+        default="",
+        help=f"the type of outlet you are controlling, valid values are {outlettypes}",
+    )
+    addargs(parser)
+
     knownargs, _ = parser.parse_known_args()
 
     # Rebuild parser with help enabled so we can get actual help strings.
@@ -46,17 +58,9 @@ def cli(mode: str) -> int:
         type=str,
         help=f"the type of outlet you are controlling, valid values are {outlettypes}",
     )
-    parser.add_argument(
-        "--daemon",
-        action="store_true",
-        help="Use a local daemon to speed up fetch and set requests.",
-    )
-    parser.add_argument(
-        "--port",
-        metavar="PORT",
-        type=int,
-        help="the port which the daemon will listen on, defaults to 54545",
-    )
+    addargs(parser)
+
+    # Add outlet-specific arguments.
     for clz in ALL_OUTLET_CLASSES:
         if clz.type.lower() == knownargs.type.lower():
             # Figure out arguments to add for this outlet.
@@ -108,7 +112,7 @@ def cli(mode: str) -> int:
     if args['daemon']:
         # Import this here so we don't pay the cost otherwise.
         from smartoutlet.daemon import OutletProxy
-        inst = OutletProxy.deserialize({'type': clz.type, 'port': args['port'], **constructor_args})
+        inst = OutletProxy.deserialize({'type': clz.type, 'port': args['port'], 'log': args['log'], **constructor_args})
     else:
         inst = clz.deserialize(constructor_args)
 

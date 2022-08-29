@@ -1,3 +1,4 @@
+import logging
 import os
 import Pyro5.errors  # type: ignore
 import sys
@@ -48,11 +49,17 @@ class OutletProxy(OutletInterface):
         # We use this to connect to a remote interface
         if "type" not in vals:
             raise Exception("Could not instantiate a deserialization of an abstract outlet!")
+
         if "port" in vals:
             port = cast(int, vals['port'])
             del vals['port']
         else:
             port = PROXY_PORT
+
+        logloc = None
+        if "log" in vals:
+            logloc = cast(str, vals["log"])
+            del vals["log"]
 
         # Attempt to connect to an existing remote daemon that's already started.
         proxy = OutletProxy.__connect(port)
@@ -72,10 +79,19 @@ class OutletProxy(OutletInterface):
                     # We're the parent, we should exit.
                     sys.exit(0)
 
+                # Set up logging to go to file.
+                if logloc is not None:
+                    try:
+                        os.remove(logloc)
+                    except FileNotFoundError:
+                        pass
+                    logging.basicConfig(filename=logloc, level=logging.INFO)
+
                 # Now, start the server daemon.
                 for _ in range(500):
                     try:
                         daemon = Pyro5.server.Daemon(host="localhost", port=port)
+                        logging.info(f"Started daemon server listening on {port}")
                         break
                     except OSError:
                         # Can happen when restarting server.
@@ -126,6 +142,8 @@ class OutletDaemon:
             return True
 
         # We need to kill ourselves, we're running the wrong version!
+        logging.info("We are running the wrong version, so time to die!")
+
         global exit_daemon
         exit_daemon = True
 
@@ -142,6 +160,7 @@ class OutletDaemon:
         if key not in self.registered_outlets:
             for clz in ALL_OUTLET_CLASSES:
                 if clz.type.lower() == knowntype.lower():
+                    logging.info(f"Registering new outlet with key {key}")
                     self.registered_outlets[key] = clz.deserialize(vals)
                     break
             else:
@@ -153,14 +172,18 @@ class OutletDaemon:
         key = self.__getKey(vals)
         if key not in self.cached_states or self.cached_times[key] < (time.time() - PROXY_CACHE_TIME):
             outlet = self.__getClass(vals)
+            logging.info(f"Fetching state for {key}")
             self.cached_states[key] = outlet.getState()
             self.cached_times[key] = time.time()
 
+        logging.info(f"State for {key} is {self.cached_states[key]}")
         return self.cached_states[key]
 
     def setState(self, vals: Dict[str, object], state: bool) -> None:
         key = self.__getKey(vals)
         outlet = self.__getClass(vals)
+        logging.info(f"Setting state for {key} to {state}")
         outlet.setState(state)
         self.cached_states[key] = outlet.getState()
         self.cached_times[key] = time.time()
+        logging.info(f"State for {key} is {self.cached_states[key]}")
