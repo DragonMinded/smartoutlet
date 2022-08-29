@@ -9,7 +9,7 @@ from . import ALL_OUTLET_CLASSES
 from .interface import OutletInterface
 
 
-PROXY_VERSION: Final[int] = 3
+PROXY_VERSION: Final[int] = 4
 PROXY_PORT: Final[int] = 54545
 PROXY_CACHE_TIME: Final[float] = 0.5
 
@@ -61,16 +61,29 @@ class OutletProxy(OutletInterface):
         if proxy is None:
             pid = os.fork()
             if pid == 0:
+                # Decouple from parent.
+                os.chdir("/")
+                os.setsid()
+                os.umask(0)
+
+                # Secondary fork.
+                pid = os.fork()
+                if pid > 0:
+                    # We're the parent, we should exit.
+                    sys.exit(0)
+
+                # Now, start the server daemon.
                 for _ in range(500):
                     try:
                         daemon = Pyro5.server.Daemon(host="localhost", port=port)
                         break
                     except OSError:
                         # Can happen when restarting server.
-                        continue
+                        time.sleep(0.01)
                 else:
                     raise Exception("Failed to spawn proxy daemon instance!")
 
+                # Now, run the loop until we're requested to exit.
                 daemon.register(OutletDaemon, objectId="smartoutlet")
                 daemon.requestLoop(lambda: not exit_daemon)
                 sys.exit(0)
