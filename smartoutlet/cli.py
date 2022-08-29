@@ -27,6 +27,12 @@ def cli(mode: str) -> int:
         action="store_true",
         help="Use a local daemon to speed up fetch and set requests.",
     )
+    parser.add_argument(
+        "--port",
+        metavar="PORT",
+        type=int,
+        help="the port which the daemon will listen on, defaults to 54545",
+    )
     knownargs, _ = parser.parse_known_args()
 
     # Rebuild parser with help enabled so we can get actual help strings.
@@ -44,6 +50,12 @@ def cli(mode: str) -> int:
         "--daemon",
         action="store_true",
         help="Use a local daemon to speed up fetch and set requests.",
+    )
+    parser.add_argument(
+        "--port",
+        metavar="PORT",
+        type=int,
+        help="the port which the daemon will listen on, defaults to 54545",
     )
     for clz in ALL_OUTLET_CLASSES:
         if clz.type.lower() == knownargs.type.lower():
@@ -96,7 +108,7 @@ def cli(mode: str) -> int:
     if args['daemon']:
         # Import this here so we don't pay the cost otherwise.
         from smartoutlet.daemon import OutletProxy
-        inst = OutletProxy.deserialize({'type': clz.type, **constructor_args})
+        inst = OutletProxy.deserialize({'type': clz.type, 'port': args['port'], **constructor_args})
     else:
         inst = clz.deserialize(constructor_args)
 

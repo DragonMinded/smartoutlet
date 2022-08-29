@@ -48,9 +48,14 @@ class OutletProxy(OutletInterface):
         # We use this to connect to a remote interface
         if "type" not in vals:
             raise Exception("Could not instantiate a deserialization of an abstract outlet!")
+        if "port" in vals:
+            port = cast(int, vals['port'])
+            del vals['port']
+        else:
+            port = PROXY_PORT
 
         # Attempt to connect to an existing remote daemon that's already started.
-        proxy = OutletProxy.__connect(PROXY_PORT)
+        proxy = OutletProxy.__connect(port)
 
         # If it is not already running, attempt to start a new one.
         if proxy is None:
@@ -58,7 +63,7 @@ class OutletProxy(OutletInterface):
             if pid == 0:
                 for _ in range(500):
                     try:
-                        daemon = Pyro5.server.Daemon(host="localhost", port=PROXY_PORT)
+                        daemon = Pyro5.server.Daemon(host="localhost", port=port)
                         break
                     except OSError:
                         # Can happen when restarting server.
@@ -73,7 +78,7 @@ class OutletProxy(OutletInterface):
             else:
                 for _ in range(500):
                     try:
-                        proxy = OutletProxy.__connect(PROXY_PORT)
+                        proxy = OutletProxy.__connect(port)
                     except OSError:
                         # Can happen when restarting server.
                         proxy = None
