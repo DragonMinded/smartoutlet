@@ -4,6 +4,7 @@ import os
 import sys
 
 from smartoutlet import ALL_OUTLET_CLASSES
+from smartoutlet.daemon import OutletProxy
 
 
 def cli(mode: str) -> int:
@@ -22,6 +23,11 @@ def cli(mode: str) -> int:
         default="",
         help=f"the type of outlet you are controlling, valid values are {outlettypes}",
     )
+    parser.add_argument(
+        "--daemon",
+        action="store_true",
+        help="Use a local daemon to speed up fetch and set requests.",
+    )
     knownargs, _ = parser.parse_known_args()
 
     # Rebuild parser with help enabled so we can get actual help strings.
@@ -34,6 +40,11 @@ def cli(mode: str) -> int:
         metavar="TYPE",
         type=str,
         help=f"the type of outlet you are controlling, valid values are {outlettypes}",
+    )
+    parser.add_argument(
+        "--daemon",
+        action="store_true",
+        help="Use a local daemon to speed up fetch and set requests.",
     )
     for clz in ALL_OUTLET_CLASSES:
         if clz.type.lower() == knownargs.type.lower():
@@ -85,7 +96,10 @@ def cli(mode: str) -> int:
                     continue
                 constructor_args[param.name] = args[param.name]
 
-            inst = clz.deserialize(constructor_args)
+            if args['daemon']:
+                inst = OutletProxy.deserialize({'type': clz.type, **constructor_args})
+            else:
+                inst = clz.deserialize(constructor_args)
 
             if mode == "fetch":
                 state = inst.getState()
