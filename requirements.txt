@@ -1,4 +1,3 @@
-pyro5
 requests
 pysnmplib
 types-requests

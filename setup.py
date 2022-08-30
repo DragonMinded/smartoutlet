@@ -8,7 +8,7 @@ with open(os.path.join(dir_path, "README.md"), "r", encoding="utf-8") as fh:
 
 setup(
     name='smartoutlet',
-    version='0.1.4',
+    version='0.2.0',
     description='Collection of utilities for interfacing with various PDUs and smart outlets.',
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -23,7 +23,6 @@ setup(
     install_requires=[
         'requests',
         'pysnmplib',
-        'pyro5',
     ],
     python_requires=">=3.6",
 )
