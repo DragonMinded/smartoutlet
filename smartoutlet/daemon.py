@@ -92,7 +92,7 @@ class OutletProxy(OutletInterface):
             raise Exception("Could not instantiate a deserialization of an abstract outlet!")
 
         if "port" in vals:
-            port = cast(int, vals['port'])
+            port = cast(int, vals['port'] or PROXY_PORT)
             del vals['port']
         else:
             port = PROXY_PORT
