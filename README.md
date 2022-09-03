@@ -26,6 +26,18 @@ Turn the same outlet back off again:
 ./setoutlet ap7900 10.0.0.125 3 off
 ```
 
+See generic help on how to use fetchoutlet:
+
+```
+./fetchoutlet --help
+```
+
+See specific parameter help for fetchoutlet with an np-02 outlet:
+
+```
+./fetchoutlet np-02 --help
+```
+
 Obviously, you can substitute your own device's IP (or local DNS entry if you have set it up) for the IP of the device. The outlets should be numbered as they appear on the device's silkscreen. You should always use "on" and "off" to denote the on and off state of an outlet, or when fetching the state of an outlet. Note that if a unit can't be queried (you specified the wrong IP, have a bad username/password combo, specified an out-of-range outlet or haven't enabled SNMP for instance) fetchoutlet will instead return "unknown".
 
 ## Sample Home Assistant Configuration
