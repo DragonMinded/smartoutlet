@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import ClassVar, Dict, Optional
+from typing import Any, Callable, ClassVar, Dict, Optional, TypeVar
 
 
 class OutletInterface(ABC):
@@ -21,3 +21,16 @@ class OutletInterface(ABC):
     @abstractmethod
     def setState(self, state: bool) -> None:
         ...
+
+
+F = TypeVar('F', bound=Callable[..., Any])
+
+
+def param(param: str, description: str) -> Callable[[F], F]:
+    def decorator(clz: F) -> F:
+        paramdict = getattr(clz, "__params__", {})
+        paramdict[param] = description
+        setattr(clz, "__params__", paramdict)
+        return clz
+
+    return decorator

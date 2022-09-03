@@ -1,8 +1,11 @@
 from typing import ClassVar, Dict, Optional, cast
 
-from .interface import OutletInterface
+from .interface import OutletInterface, param
 
 
+@param("host", "the hostname or IP address of the NP-02 you are attempting to control")
+@param("outlet", "the outlet number (between 1-2 inclusive) that you are attempting to control")
+@param("community", "the SNMP read/write community as specified in the NP-02 config menu")
 class NP02Outlet(OutletInterface):
     type: ClassVar[str] = "np-02"
 

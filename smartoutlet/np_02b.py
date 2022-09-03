@@ -1,8 +1,12 @@
 from typing import ClassVar, Dict, Optional, cast
 
-from .interface import OutletInterface
+from .interface import OutletInterface, param
 
 
+@param("host", "the hostname or IP address of the NP-02B you are attempting to control")
+@param("outlet", "the outlet number (between 1-2 inclusive) that you are attempting to control")
+@param("username", "the administrator username as specified in the NP-02B web interface")
+@param("password", "the administrator password as specified in the NP-02B web interface")
 class NP02BOutlet(OutletInterface):
     type: ClassVar[str] = "np-02b"
 

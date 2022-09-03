@@ -1,8 +1,17 @@
 from typing import ClassVar, Dict, Optional, cast
 
-from .interface import OutletInterface
+from .interface import OutletInterface, param
 
 
+@param("host", "the hostname or IP address of the SNMP-based outlet you are attempting to control")
+@param("query_oid", "the dotted OID that should be queried to determine the state of the outlet")
+@param("query_on_value", "the integer value that gets returned from the outlet to designate that it is on")
+@param("query_off_value", "the integer value that gets returned from the outlet to designate that it is off")
+@param("update_oid", "the dotted OID that should be set when updating the state of the outlet")
+@param("update_on_value", "the integer value that gets used when setting the state of the outlet to on")
+@param("update_off_value", "the integer value that gets used when setting the state of the outlet to off")
+@param("read_community", "the SNMP read community as configured on the SNMP-based outlet")
+@param("write_community", "the SNMP write community as configured on the SNMP-based outlet")
 class SNMPOutlet(OutletInterface):
     type: ClassVar[str] = "snmp"
 

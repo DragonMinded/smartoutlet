@@ -65,6 +65,7 @@ def cli(mode: str) -> int:
         if clz.type.lower() == knownargs.type.lower():
             # Figure out arguments to add for this outlet.
             signature = inspect.signature(clz.__init__)
+            params = getattr(clz, "__params__", {})
             for param in signature.parameters.values():
                 if param.name == "self":
                     continue
@@ -73,14 +74,14 @@ def cli(mode: str) -> int:
                         param.name,
                         metavar=param.name.upper(),
                         type=param.annotation,
-                        help=f"{param.annotation.__name__} parameter",
+                        help=params.get(param.name, f"{param.annotation.__name__} parameter"),
                     )
                 else:
                     parser.add_argument(
                         f"--{param.name}",
                         type=param.annotation,
                         default=param.default,
-                        help=f"{param.annotation.__name__} parameter, defaults to {param.default}",
+                        help=params.get(param.name, f"{param.annotation.__name__} parameter") + f", defaults to {param.default}",
                     )
             break
     else:
