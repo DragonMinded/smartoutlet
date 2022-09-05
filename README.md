@@ -2,6 +2,16 @@
 
 Collection of utilities for interfacing with various PDUs and smart outlets. Meant to be used alongside home automation scripts or Home Assistant with the "command_line" platform.
 
+## Support
+
+Supports fetching the state of and setting the state of any outlet on the following models.
+
+* APC AP7900 (Uses SNMP interface)
+* Synaccess NP-02 (Uses SNMP interface)
+* Synaccess NP-02B (Uses HTTP interface)
+
+Note that it is most-likely trivial to add support for other models of the same manufacturer. Namely, The NP-08 and NP-05 line of PDUs from Synaccess are likely identical save for outlet limits enforced in code. However, I don't have them to test so I haven't added them. Note also that if you have a PDU that works via standard SNMP you can use the "SNMP" generic outlet and provide the read and update MIBs as well as the on and off values.
+
 ## CLI
 
 A pair of command-line scripts are included that can probe or set the state of any supported outlet type. These can be used from the "command_line" platform of Home Assistant as long as you make sure this package is installed in your installation's venv and that `fetchoutlet` and `setoutlet` are located in the home directory of your Home Assistant setup. Some example uses are as follows.
