@@ -7,6 +7,7 @@ Collection of utilities for interfacing with various PDUs and smart outlets. Mea
 Supports fetching the state of and setting the state of any outlet on the following models.
 
 * APC AP7900 (Uses SNMP interface)
+* APC AP7901 (Uses SNMP interface)
 * Synaccess NP-02 (Uses SNMP interface)
 * Synaccess NP-02B (Uses HTTP interface)
 
