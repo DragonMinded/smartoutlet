@@ -1,3 +1,4 @@
 requests
 pysnmplib
 types-requests
+flask

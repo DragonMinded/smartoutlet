@@ -1,0 +1,13 @@
+#! /usr/bin/env python3
+import argparse
+
+from smartoutlet.http import app
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="A RESTful web server that can be queried from Home Assistant or other similar automation software.")
+    parser.add_argument("-p", "--port", help="Port to listen on. Defaults to 80", type=int, default=80)
+    parser.add_argument("-d", "--debug", action="store_true", help="Enable debug mode on server")
+    args = parser.parse_args()
+
+    app.run(host='0.0.0.0', port=args.port, debug=bool(args.debug))
