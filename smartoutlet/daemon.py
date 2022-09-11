@@ -6,7 +6,7 @@ import struct
 import sys
 import threading
 import time
-from typing import ClassVar, Dict, Final, List, Optional, cast
+from typing import ClassVar, Dict, Final, List, Optional, TextIO, cast
 
 from . import ALL_OUTLET_CLASSES
 from .interface import OutletInterface
@@ -66,6 +66,11 @@ class OutletConnection:
             self.sock = None
 
 
+def close_stream(system_stream: TextIO) -> None:
+    target_fd = os.open(os.devnull, os.O_RDWR)
+    os.dup2(target_fd, system_stream.fileno())
+
+
 class OutletProxy(OutletInterface):
     type: ClassVar[str] = "proxy"
 
@@ -113,6 +118,11 @@ class OutletProxy(OutletInterface):
                 os.chdir("/")
                 os.setsid()
                 os.umask(0)
+
+                # Stop subprocess.check_output from hanging in Home Assistant.
+                close_stream(sys.stdin)
+                close_stream(sys.stdout)
+                close_stream(sys.stderr)
 
                 # Secondary fork.
                 pid = os.fork()
