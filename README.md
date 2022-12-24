@@ -9,9 +9,12 @@ Supports fetching the state of and setting the state of any outlet on the follow
 * APC AP7900 (Uses SNMP interface)
 * APC AP7901 (Uses SNMP interface)
 * Synaccess NP-02 (Uses SNMP interface)
+* Synaccess NP-08 (Uses SNMP interface)
 * Synaccess NP-02B (Uses HTTP interface)
+* Synaccess NP-05B (Uses HTTP interface, not tested!)
+* Synaccess NP-08B (Uses HTTP interface, not tested!)
 
-Note that it is most-likely trivial to add support for other models of the same manufacturer. Namely, The NP-08 and NP-05 line of PDUs from Synaccess are likely identical save for outlet limits enforced in code. However, I don't have them to test so I haven't added them. Note also that if you have a PDU that works via standard SNMP you can use the "SNMP" generic outlet and provide the read and update MIBs as well as the on and off values.
+Note that it is most-likely trivial to add support for other models of the same manufacturer. Note also that support has been added for the NP-05B and NP-08B models by Synaccess, but I do not have any units to test with. They should, however, work in theory. Note also that if you have a PDU that works via standard SNMP you can use the "SNMP" generic outlet and provide the read and update MIBs as well as the on and off values.
 
 ## CLI
 

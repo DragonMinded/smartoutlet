@@ -12,7 +12,11 @@ class InvalidOutletException(Exception):
     pass
 
 
-def create_arg_map(outlettype: str) -> Tuple[Type[OutletInterface], Dict[str, Tuple[Callable[[Optional[str]], object], str]]]:
+def create_arg_map(
+    outlettype: str,
+) -> Tuple[
+    Type[OutletInterface], Dict[str, Tuple[Callable[[Optional[str]], object], str]]
+]:
     outmap: Dict[str, Tuple[Callable[[Optional[str]], object], str]] = {}
 
     for clz in ALL_OUTLET_CLASSES:
@@ -23,29 +27,45 @@ def create_arg_map(outlettype: str) -> Tuple[Type[OutletInterface], Dict[str, Tu
                 if param.name == "self":
                     continue
                 if param.default is inspect.Parameter.empty:
-                    def requiredcreator(annotation: Callable[[str], object]) -> Callable[[Optional[str]], object]:
+
+                    def requiredcreator(
+                        annotation: Callable[[str], object]
+                    ) -> Callable[[Optional[str]], object]:
                         def cons(arg: Optional[str]) -> object:
                             if arg is None:
-                                raise TypeError(f"Expected {annotation.__name__}, got None!")
+                                raise TypeError(
+                                    f"Expected {annotation.__name__}, got None!"
+                                )
                             return annotation(arg)
+
                         return cons
 
-                    outmap[param.name] = requiredcreator(param.annotation), param.annotation.__name__
+                    outmap[param.name] = (
+                        requiredcreator(param.annotation),
+                        param.annotation.__name__,
+                    )
                 else:
-                    def defaultcreator(annotation: Callable[[str], object], default: object) -> Callable[[Optional[str]], object]:
+
+                    def defaultcreator(
+                        annotation: Callable[[str], object], default: object
+                    ) -> Callable[[Optional[str]], object]:
                         def cons(arg: Optional[str]) -> object:
                             if arg is None:
                                 return default
                             return annotation(arg)
+
                         return cons
 
-                    outmap[param.name] = defaultcreator(param.annotation, param.default), param.annotation.__name__
+                    outmap[param.name] = (
+                        defaultcreator(param.annotation, param.default),
+                        param.annotation.__name__,
+                    )
             return clz, outmap
 
     raise InvalidOutletException(f"Unrecognized outlet type {outlettype}!")
 
 
-@app.route('/<outlettype>', methods=['GET'])
+@app.route("/<outlettype>", methods=["GET"])
 def query_outlet(outlettype: str) -> Response:
     try:
         clz, args = create_arg_map(outlettype)
@@ -57,7 +77,9 @@ def query_outlet(outlettype: str) -> Response:
         try:
             argmap[k] = cons(request.args.get(k))
         except TypeError:
-            return make_response(f"Outlet type {outlettype} requires parameter {k} to be of type {objtype}!")
+            return make_response(
+                f"Outlet type {outlettype} requires parameter {k} to be of type {objtype}!"
+            )
 
     try:
         inst = clz.deserialize(argmap)
@@ -72,28 +94,30 @@ def query_outlet(outlettype: str) -> Response:
         return make_response(str(e), 400)
 
 
-@app.route('/<outlettype>', methods=['PUT', 'POST', 'PATCH'])
+@app.route("/<outlettype>", methods=["PUT", "POST", "PATCH"])
 def update_outlet(outlettype: str) -> Response:
     try:
         clz, args = create_arg_map(outlettype)
     except InvalidOutletException as e:
         return make_response(str(e), 400)
 
-    data = request.data.decode('utf-8')
+    data = request.data.decode("utf-8")
     state = None
     if data.lower() == "on":
         state = True
     elif data.lower() == "off":
         state = False
     else:
-        return make_response("Request body should be either \"on\" or \"off\"", 400)
+        return make_response('Request body should be either "on" or "off"', 400)
 
     argmap: Dict[str, object] = {}
     for k, (cons, objtype) in args.items():
         try:
             argmap[k] = cons(request.args.get(k))
         except TypeError:
-            return make_response(f"Outlet type {outlettype} requires parameter {k} to be of type {objtype}!")
+            return make_response(
+                f"Outlet type {outlettype} requires parameter {k} to be of type {objtype}!"
+            )
 
     try:
         inst = clz.deserialize(argmap)

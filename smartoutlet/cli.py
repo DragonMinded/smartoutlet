@@ -29,12 +29,16 @@ def addargs(parser: argparse.ArgumentParser) -> None:
 
 
 def cli(mode: str) -> int:
-    outlettypes = ', '.join(c.type for c in ALL_OUTLET_CLASSES)
+    outlettypes = ", ".join(c.type for c in ALL_OUTLET_CLASSES)
 
     if mode == "fetch":
-        parser = argparse.ArgumentParser(description="Fetch the state of a smart outlet or PDU.", add_help=False)
+        parser = argparse.ArgumentParser(
+            description="Fetch the state of a smart outlet or PDU.", add_help=False
+        )
     else:
-        parser = argparse.ArgumentParser(description="Set the state of a smart outlet or PDU.", add_help=False)
+        parser = argparse.ArgumentParser(
+            description="Set the state of a smart outlet or PDU.", add_help=False
+        )
     parser.add_argument(
         "type",
         metavar="TYPE",
@@ -49,9 +53,13 @@ def cli(mode: str) -> int:
 
     # Rebuild parser with help enabled so we can get actual help strings.
     if mode == "fetch":
-        parser = argparse.ArgumentParser(description="Fetch the state of a smart outlet or PDU.")
+        parser = argparse.ArgumentParser(
+            description="Fetch the state of a smart outlet or PDU."
+        )
     else:
-        parser = argparse.ArgumentParser(description="Set the state of a smart outlet or PDU.")
+        parser = argparse.ArgumentParser(
+            description="Set the state of a smart outlet or PDU."
+        )
     parser.add_argument(
         "type",
         metavar="TYPE",
@@ -74,19 +82,28 @@ def cli(mode: str) -> int:
                         param.name,
                         metavar=param.name.upper(),
                         type=param.annotation,
-                        help=params.get(param.name, f"{param.annotation.__name__} parameter"),
+                        help=params.get(
+                            param.name, f"{param.annotation.__name__} parameter"
+                        ),
                     )
                 else:
                     parser.add_argument(
                         f"--{param.name}",
                         type=param.annotation,
                         default=param.default,
-                        help=params.get(param.name, f"{param.annotation.__name__} parameter") + f", defaults to {param.default}",
+                        help=params.get(
+                            param.name, f"{param.annotation.__name__} parameter"
+                        )
+                        + f", defaults to {param.default}",
                     )
             break
     else:
         if knownargs.type:
-            print(f"Unrecognized outlet type {knownargs.type}!", os.linesep, file=sys.stderr)
+            print(
+                f"Unrecognized outlet type {knownargs.type}!",
+                os.linesep,
+                file=sys.stderr,
+            )
             parser.print_help()
             return 1
 
@@ -99,8 +116,8 @@ def cli(mode: str) -> int:
         )
     args = vars(parser.parse_args())
     if mode == "set":
-        state = args['state'].lower() == "on"
-        del args['state']
+        state = args["state"].lower() == "on"
+        del args["state"]
 
     # Figure out arguments to add for this outlet.
     signature = inspect.signature(clz.__init__)
@@ -110,10 +127,18 @@ def cli(mode: str) -> int:
             continue
         constructor_args[param.name] = args[param.name]
 
-    if args['daemon']:
+    if args["daemon"]:
         # Import this here so we don't pay the cost otherwise.
         from smartoutlet.daemon import OutletProxy
-        inst = OutletProxy.deserialize({'type': clz.type, 'port': args['port'], 'log': args['log'], **constructor_args})
+
+        inst = OutletProxy.deserialize(
+            {
+                "type": clz.type,
+                "port": args["port"],
+                "log": args["log"],
+                **constructor_args,
+            }
+        )
     else:
         inst = clz.deserialize(constructor_args)
 

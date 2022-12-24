@@ -23,7 +23,7 @@ class OutletInterface(ABC):
         ...
 
 
-F = TypeVar('F', bound=Callable[..., Any])
+F = TypeVar("F", bound=Callable[..., Any])
 
 
 def param(param: str, description: str) -> Callable[[F], F]:

@@ -94,11 +94,13 @@ class OutletProxy(OutletInterface):
     def deserialize(vals: Dict[str, object]) -> "OutletInterface":
         # We use this to connect to a remote interface
         if "type" not in vals:
-            raise Exception("Could not instantiate a deserialization of an abstract outlet!")
+            raise Exception(
+                "Could not instantiate a deserialization of an abstract outlet!"
+            )
 
         if "port" in vals:
-            port = cast(int, vals['port'] or PROXY_PORT)
-            del vals['port']
+            port = cast(int, vals["port"] or PROXY_PORT)
+            del vals["port"]
         else:
             port = PROXY_PORT
 
@@ -246,7 +248,9 @@ class OutletDaemon:
         with self.pending_keys_lock:
             if self.thread_count < PROXY_POOL_SIZE:
                 self.thread_count += 1
-                thread = threading.Thread(target=pollThread, args=(self, self.thread_count), daemon=True)
+                thread = threading.Thread(
+                    target=pollThread, args=(self, self.thread_count), daemon=True
+                )
 
         if thread is not None:
             thread.start()
@@ -268,13 +272,17 @@ class OutletDaemon:
                     if self.pending_keys:
                         key = self.pending_keys.pop()
 
-                if key is not None and self.cached_times[key] < (time.time() - PROXY_CACHE_REFILL_TIME):
+                if key is not None and self.cached_times[key] < (
+                    time.time() - PROXY_CACHE_REFILL_TIME
+                ):
                     # Now, let's fetch the outlet in order to refresh.
                     outlet = self.registered_outlets[key]
                     logging.debug(f"Caching state for {key}")
                     self.cached_states[key] = outlet.getState()
                     self.cached_times[key] = time.time()
-                    logging.debug(f"Cached state for {key} is {self.cached_states[key]}")
+                    logging.debug(
+                        f"Cached state for {key} is {self.cached_states[key]}"
+                    )
                 else:
                     # Sleep a little longer, given we had nothing to do.
                     time.sleep(0.5)
@@ -302,8 +310,8 @@ class OutletDaemon:
 
     def __getClass(self, vals: Dict[str, object]) -> OutletInterface:
         key = self.__getKey(vals)
-        knowntype: str = cast(str, vals['type'])
-        del vals['type']
+        knowntype: str = cast(str, vals["type"])
+        del vals["type"]
 
         if key not in self.registered_outlets:
             for clz in ALL_OUTLET_CLASSES:
@@ -320,7 +328,9 @@ class OutletDaemon:
 
     def getState(self, vals: Dict[str, object]) -> Optional[bool]:
         key = self.__getKey(vals)
-        if key not in self.cached_states or self.cached_times[key] < (time.time() - PROXY_CACHE_TIME):
+        if key not in self.cached_states or self.cached_times[key] < (
+            time.time() - PROXY_CACHE_TIME
+        ):
             outlet = self.__getClass(vals)
             logging.info(f"Fetching state for {key}")
             self.cached_states[key] = outlet.getState()

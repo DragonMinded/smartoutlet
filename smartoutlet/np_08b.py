@@ -4,19 +4,19 @@ from .interface import OutletInterface, param
 from .np_0xb import NP0XBOutlet
 
 
-@param("host", "the hostname or IP address of the NP-02B you are attempting to control")
+@param("host", "the hostname or IP address of the NP-08B you are attempting to control")
 @param(
     "outlet",
-    "the outlet number (between 1-2 inclusive) that you are attempting to control",
+    "the outlet number (between 1-8 inclusive) that you are attempting to control",
 )
 @param(
-    "username", "the administrator username as specified in the NP-02B web interface"
+    "username", "the administrator username as specified in the NP-08B web interface"
 )
 @param(
-    "password", "the administrator password as specified in the NP-02B web interface"
+    "password", "the administrator password as specified in the NP-08B web interface"
 )
-class NP02BOutlet(NP0XBOutlet):
-    type: ClassVar[str] = "np-02b"
+class NP08BOutlet(NP0XBOutlet):
+    type: ClassVar[str] = "np-08b"
 
     def __init__(
         self,
@@ -26,11 +26,11 @@ class NP02BOutlet(NP0XBOutlet):
         username: str = "admin",
         password: str = "admin",
     ) -> None:
-        super().__init__(host, 2, outlet, username, password)
+        super().__init__(host, 8, outlet, username, password)
 
     @staticmethod
     def deserialize(vals: Dict[str, object]) -> OutletInterface:
-        return NP02BOutlet(
+        return NP08BOutlet(
             host=cast(str, vals["host"]),
             outlet=cast(int, vals["outlet"]),
             username=cast(str, vals["username"]),

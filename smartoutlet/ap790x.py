@@ -4,7 +4,14 @@ from .interface import OutletInterface
 
 
 class AP790XOutlet(OutletInterface):
-    def __init__(self, *, host: str, outlet: int, read_community: str = "public", write_community: str = "private") -> None:
+    def __init__(
+        self,
+        *,
+        host: str,
+        outlet: int,
+        read_community: str = "public",
+        write_community: str = "private",
+    ) -> None:
         if outlet < 1 or outlet > 8:
             raise Exception("Out of bounds outlet number!")
 
@@ -29,19 +36,21 @@ class AP790XOutlet(OutletInterface):
 
     def serialize(self) -> Dict[str, object]:
         return {
-            'host': self.host,
-            'outlet': self.outlet,
-            'read_community': self.read_community,
-            'write_community': self.write_community,
+            "host": self.host,
+            "outlet": self.outlet,
+            "read_community": self.read_community,
+            "write_community": self.write_community,
         }
 
     @classmethod
-    def deserialize(cls: "Type[AP790XOutlet]", vals: Dict[str, object]) -> "AP790XOutlet":
+    def deserialize(
+        cls: "Type[AP790XOutlet]", vals: Dict[str, object]
+    ) -> "AP790XOutlet":
         return cls(
-            host=cast(str, vals['host']),
-            outlet=cast(int, vals['outlet']),
-            read_community=cast(str, vals['read_community']),
-            write_community=cast(str, vals['write_community']),
+            host=cast(str, vals["host"]),
+            outlet=cast(int, vals["outlet"]),
+            read_community=cast(str, vals["read_community"]),
+            write_community=cast(str, vals["write_community"]),
         )
 
     def getState(self) -> Optional[bool]:

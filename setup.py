@@ -7,23 +7,23 @@ with open(os.path.join(dir_path, "README.md"), "r", encoding="utf-8") as fh:
 
 
 setup(
-    name='smartoutlet',
-    version='0.3.2',
-    description='Collection of utilities for interfacing with various PDUs and smart outlets.',
+    name="smartoutlet",
+    version="0.3.2",
+    description="Collection of utilities for interfacing with various PDUs and smart outlets.",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    author='DragonMinded',
-    author_email='dragonminded@dragonminded.com',
-    license='Public Domain',
-    url='https://github.com/DragonMinded/smartoutlet',
+    author="DragonMinded",
+    author_email="dragonminded@dragonminded.com",
+    license="Public Domain",
+    url="https://github.com/DragonMinded/smartoutlet",
     package_data={"smartoutlet": ["py.typed"]},
     packages=[
-        'smartoutlet',
+        "smartoutlet",
     ],
     install_requires=[
-        'requests',
-        'pysnmplib',
-        'flask',
+        "requests",
+        "pysnmplib",
+        "flask",
     ],
     python_requires=">=3.6",
 )
