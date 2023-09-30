@@ -1,6 +1,7 @@
 from typing import Dict, Optional
 
 from .interface import OutletInterface
+from .env import network_timeout
 
 
 class NP0XOutlet(OutletInterface):
@@ -46,7 +47,7 @@ class NP0XOutlet(OutletInterface):
         iterator = self.snmplib.getCmd(
             self.snmplib.SnmpEngine(),
             self.snmplib.CommunityData(self.community, mpModel=0),
-            self.snmplib.UdpTransportTarget((self.host, 161), timeout=1.0, retries=0),
+            self.snmplib.UdpTransportTarget((self.host, 161), timeout=network_timeout(), retries=0),
             self.snmplib.ContextData(),
             self.snmplib.ObjectType(
                 self.snmplib.ObjectIdentity(

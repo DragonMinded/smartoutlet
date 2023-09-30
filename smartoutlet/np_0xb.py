@@ -1,6 +1,7 @@
 from typing import Dict, Optional
 
 from .interface import OutletInterface
+from .env import network_timeout
 
 
 class NP0XBOutlet(OutletInterface):
@@ -44,7 +45,7 @@ class NP0XBOutlet(OutletInterface):
                 response = (
                     self.requests.get(
                         f"http://{self.username}:{self.password}@{self.host}/cmd.cgi?$A5",
-                        timeout=1.0,
+                        timeout=network_timeout(),
                     )
                     .content.decode("utf-8")
                     .strip()
@@ -64,7 +65,7 @@ class NP0XBOutlet(OutletInterface):
             relay = f"rly{self.outlet - 1}"
             response = self.requests.get(
                 f"http://{self.username}:{self.password}@{self.host}/status.xml",
-                timeout=1.0,
+                timeout=network_timeout(),
             ).content.decode("utf-8")
 
             root = self.ET.fromstring(response)
@@ -85,7 +86,7 @@ class NP0XBOutlet(OutletInterface):
             response = (
                 self.requests.get(
                     f"http://{self.username}:{self.password}@{self.host}/cmd.cgi?$A3 {self.outlet} {'1' if state else '0'}",
-                    timeout=1.0,
+                    timeout=network_timeout(),
                 )
                 .content.decode("utf-8")
                 .strip()
@@ -109,7 +110,7 @@ class NP0XBOutlet(OutletInterface):
                     # Need to toggle
                     self.requests.get(
                         f"http://{self.username}:{self.password}@{self.host}/cmd.cgi?rly={self.outlet - 1}",
-                        timeout=1.0,
+                        timeout=network_timeout(),
                     )
                 except (
                     self.requests.exceptions.ConnectTimeout,

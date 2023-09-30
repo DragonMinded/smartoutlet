@@ -1,6 +1,7 @@
 from typing import ClassVar, Dict, Optional, cast
 
 from .interface import OutletInterface, param
+from .env import network_timeout
 
 
 @param(
@@ -125,7 +126,7 @@ class SNMPOutlet(OutletInterface):
         iterator = self.snmplib.getCmd(
             self.snmplib.SnmpEngine(),
             self.snmplib.CommunityData(self.read_community, mpModel=0),
-            self.snmplib.UdpTransportTarget((self.host, 161), timeout=1.0, retries=0),
+            self.snmplib.UdpTransportTarget((self.host, 161), timeout=network_timeout(), retries=0),
             self.snmplib.ContextData(),
             self.snmplib.ObjectType(self.snmplib.ObjectIdentity(self.query_oid)),
         )
