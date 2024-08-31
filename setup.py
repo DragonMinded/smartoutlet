@@ -1,5 +1,5 @@
 import os
-from setuptools import setup  # type: ignore
+from setuptools import setup
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 with open(os.path.join(dir_path, "README.md"), "r", encoding="utf-8") as fh:
@@ -8,7 +8,7 @@ with open(os.path.join(dir_path, "README.md"), "r", encoding="utf-8") as fh:
 
 setup(
     name="smartoutlet",
-    version="0.3.4",
+    version="0.3.5",
     description="Collection of utilities for interfacing with various PDUs and smart outlets.",
     long_description=long_description,
     long_description_content_type="text/markdown",

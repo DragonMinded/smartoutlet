@@ -8,6 +8,16 @@ from smartoutlet import ALL_OUTLET_CLASSES, OutletInterface
 app = Flask(__name__)
 
 
+# Cache of outlet type string, to its handler class as well as the arguments it needs to deserialize.
+# This can help us avoid rebuilding this on every request.
+outlet_cache: Dict[str, Tuple[Type[OutletInterface], Dict[str, Tuple[Callable[[Optional[str]], object], str]]]] = {}
+
+
+# Cache of parameters to instantiated outlet instances. This can help us avoid costly re-instantiation
+# if an outlet is being queried repeatedly.
+instance_cache: Dict[str, OutletInterface] = {}
+
+
 class InvalidOutletException(Exception):
     pass
 
@@ -17,6 +27,10 @@ def create_arg_map(
 ) -> Tuple[
     Type[OutletInterface], Dict[str, Tuple[Callable[[Optional[str]], object], str]]
 ]:
+    global outlet_cache
+    if outlettype in outlet_cache:
+        return outlet_cache[outlettype]
+
     outmap: Dict[str, Tuple[Callable[[Optional[str]], object], str]] = {}
 
     for clz in ALL_OUTLET_CLASSES:
@@ -60,9 +74,28 @@ def create_arg_map(
                         defaultcreator(param.annotation, param.default),
                         param.annotation.__name__,
                     )
-            return clz, outmap
+
+            outlet_cache[outlettype] = (clz, outmap)
+            return outlet_cache[outlettype]
 
     raise InvalidOutletException(f"Unrecognized outlet type {outlettype}!")
+
+
+def instantiate(clz: Type[OutletInterface], argmap: Dict[str, object]) -> OutletInterface:
+    global instance_cache
+
+    # First, form the key of this instance.
+    keydict: Dict[str, object] = {
+        '__clz__': clz.__name__,
+        **argmap,
+    }
+    key = str(tuple(sorted(keydict.items())))
+    if key in instance_cache:
+        return instance_cache[key]
+
+    inst = clz.deserialize(argmap)
+    instance_cache[key] = inst
+    return inst
 
 
 @app.route("/<outlettype>", methods=["GET"])
@@ -82,7 +115,7 @@ def query_outlet(outlettype: str) -> Response:
             )
 
     try:
-        inst = clz.deserialize(argmap)
+        inst = instantiate(clz, argmap)
         state = inst.getState()
         if state is None:
             resp = "unknown"
@@ -120,7 +153,7 @@ def update_outlet(outlettype: str) -> Response:
             )
 
     try:
-        inst = clz.deserialize(argmap)
+        inst = instantiate(clz, argmap)
         inst.setState(state)
         state = inst.getState()
         if state is None:
