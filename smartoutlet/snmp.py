@@ -1,7 +1,13 @@
-from typing import ClassVar, Dict, Optional, cast
+from contextlib import contextmanager
+from threading import Lock
+from typing import TYPE_CHECKING, ClassVar, Dict, List, Optional, Tuple, cast
 
 from .interface import OutletInterface, param
 from .env import network_timeout
+
+
+if TYPE_CHECKING:
+    import pysnmp.hlapi as snmplib  # type: ignore
 
 
 @param(
@@ -65,7 +71,7 @@ class SNMPOutlet(OutletInterface):
         self.write_community = write_community
 
         # Import this here to pay less startup time cost.
-        import pysnmp.hlapi as snmplib  # type: ignore
+        import pysnmp.hlapi as snmplib
         import pysnmp.proto.rfc1902 as rfc1902  # type: ignore
 
         self.snmplib = snmplib
@@ -75,6 +81,57 @@ class SNMPOutlet(OutletInterface):
             raise Exception("Unexpected differing types for query on and off values!")
         if type(update_on_value) != type(update_off_value):
             raise Exception("Unexpected differing types for update on and off values!")
+
+        self.engine_cache_lock = Lock()
+
+        # Since we will need at least one engine, create it. The rest will end up created
+        # if we use this same object in multiple threads and query at the same time.
+        self.engine_cache_lock.acquire()
+        try:
+            self.engine_cache: List[Tuple[bool, "snmplib.SnmpEngine"]] = [(False, self.snmplib.SnmpEngine())]
+        finally:
+            self.engine_cache_lock.release()
+
+    @contextmanager
+    def engine(self) -> "snmplib.SnmpEngine":
+        # We have to do this set of shenanigans because we want these objects to be cacheable
+        # and also multi-threaded aware. The SNMP library specifically says you want one engine
+        # per thread in multi-threaded environments. But, we run in envs with short-lived
+        # threads so we don't want to use threadlocal storage or we'd just create a new engine
+        # every time. So, manage which engines are in use (you can only be in use already if another
+        # thread is running simultaneously) and dish out unused ones.
+
+        self.engine_cache_lock.acquire()
+
+        # Grab an unused engine.
+        try:
+            engine: "snmplib.SnmpEngine"
+            for i in range(len(self.engine_cache)):
+                if not self.engine_cache[i][0]:
+                    # This one isn't in use, let's mark it as in use and use it.
+                    self.engine_cache[i] = (True, self.engine_cache[i][1])
+                    engine = self.engine_cache[i][1]
+                    break
+            else:
+                # All of them are in use, create a new one.
+                engine = self.snmplib.SnmpEngine()
+                self.engine_cache.append((True, engine))
+        finally:
+            self.engine_cache_lock.release()
+
+        try:
+            yield engine
+        finally:
+            # Now, mark it as not in use anymore.
+            self.engine_cache_lock.acquire()
+
+            try:
+                for i in range(len(self.engine_cache)):
+                    if self.engine_cache[i][1] is engine:
+                        self.engine_cache[i] = (False, engine)
+                        break
+            finally:
+                self.engine_cache_lock.release()
 
     def serialize(self) -> Dict[str, object]:
         return {
@@ -123,38 +180,40 @@ class SNMPOutlet(OutletInterface):
         )
 
     def getState(self) -> Optional[bool]:
-        iterator = self.snmplib.getCmd(
-            self.snmplib.SnmpEngine(),
-            self.snmplib.CommunityData(self.read_community, mpModel=0),
-            self.snmplib.UdpTransportTarget((self.host, 161), timeout=network_timeout(), retries=0),
-            self.snmplib.ContextData(),
-            self.snmplib.ObjectType(self.snmplib.ObjectIdentity(self.query_oid)),
-        )
+        with self.engine() as engine:
+            iterator = self.snmplib.getCmd(
+                engine,
+                self.snmplib.CommunityData(self.read_community, mpModel=0),
+                self.snmplib.UdpTransportTarget((self.host, 161), timeout=network_timeout(), retries=0),
+                self.snmplib.ContextData(),
+                self.snmplib.ObjectType(self.snmplib.ObjectIdentity(self.query_oid)),
+            )
 
-        for response in iterator:
-            errorIndication, errorStatus, errorIndex, varBinds = response
-            if errorIndication:
-                return None
-            elif errorStatus:
-                return None
-            else:
-                for varBind in varBinds:
-                    actual = self.query(varBind[1])
-                    if actual == self.query_on_value:
-                        return True
-                    if actual == self.query_off_value:
-                        return False
+            for response in iterator:
+                errorIndication, errorStatus, errorIndex, varBinds = response
+                if errorIndication:
                     return None
-        return None
+                elif errorStatus:
+                    return None
+                else:
+                    for varBind in varBinds:
+                        actual = self.query(varBind[1])
+                        if actual == self.query_on_value:
+                            return True
+                        if actual == self.query_off_value:
+                            return False
+                        return None
+            return None
 
     def setState(self, state: bool) -> None:
-        iterator = self.snmplib.setCmd(
-            self.snmplib.SnmpEngine(),
-            self.snmplib.CommunityData(self.write_community, mpModel=0),
-            self.snmplib.UdpTransportTarget((self.host, 161)),
-            self.snmplib.ContextData(),
-            self.snmplib.ObjectType(
-                self.snmplib.ObjectIdentity(self.update_oid), self.update(state)
-            ),
-        )
-        next(iterator)
+        with self.engine() as engine:
+            iterator = self.snmplib.setCmd(
+                engine,
+                self.snmplib.CommunityData(self.write_community, mpModel=0),
+                self.snmplib.UdpTransportTarget((self.host, 161)),
+                self.snmplib.ContextData(),
+                self.snmplib.ObjectType(
+                    self.snmplib.ObjectIdentity(self.update_oid), self.update(state)
+                ),
+            )
+            next(iterator)
