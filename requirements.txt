@@ -1,4 +1,5 @@
 requests
+pyasyncore
 pysnmplib
 types-requests
 flask
