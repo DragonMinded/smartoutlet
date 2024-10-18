@@ -1,8 +1,10 @@
-from flask import Flask, request, Response, make_response
+from flask import Flask, Request, request, Response, make_response
 import inspect
+import sys
 from typing import Callable, Dict, Optional, Tuple, Type
 
 from smartoutlet import ALL_OUTLET_CLASSES, OutletInterface
+from .env import verbose_mode
 
 
 app = Flask(__name__)
@@ -20,6 +22,12 @@ instance_cache: Dict[str, OutletInterface] = {}
 
 class InvalidOutletException(Exception):
     pass
+
+
+def verbose_print(request: Request, output: str) -> None:
+    if verbose_mode():
+        actual = f"{request.url} {request.method} {output}"
+        print(actual, file=sys.stderr)
 
 
 def create_arg_map(
@@ -103,6 +111,7 @@ def query_outlet(outlettype: str) -> Response:
     try:
         clz, args = create_arg_map(outlettype)
     except InvalidOutletException as e:
+        verbose_print(request, f"Couldn't instantiate outlet: {str(e)}")
         return make_response(str(e), 400)
 
     argmap: Dict[str, object] = {}
@@ -110,8 +119,13 @@ def query_outlet(outlettype: str) -> Response:
         try:
             argmap[k] = cons(request.args.get(k))
         except TypeError:
+            verbose_print(
+                request,
+                f"Couldn't instantiate outlet: Outlet type {outlettype} requires parameter {k} to be of type {objtype}"
+            )
             return make_response(
-                f"Outlet type {outlettype} requires parameter {k} to be of type {objtype}!"
+                f"Outlet type {outlettype} requires parameter {k} to be of type {objtype}!",
+                400,
             )
 
     try:
@@ -122,8 +136,10 @@ def query_outlet(outlettype: str) -> Response:
         else:
             resp = "on" if state else "off"
 
+        verbose_print(request, f"Outlet responded with the state: {resp}")
         return make_response(resp, 200)
     except Exception as e:
+        verbose_print(request, f"Couldn't query outlet: {str(e)}")
         return make_response(str(e), 400)
 
 
