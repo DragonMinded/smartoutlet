@@ -148,6 +148,7 @@ def update_outlet(outlettype: str) -> Response:
     try:
         clz, args = create_arg_map(outlettype)
     except InvalidOutletException as e:
+        verbose_print(request, f"Couldn't instantiate outlet: {str(e)}")
         return make_response(str(e), 400)
 
     data = request.data.decode("utf-8")
@@ -157,6 +158,7 @@ def update_outlet(outlettype: str) -> Response:
     elif data.lower() == "off":
         state = False
     else:
+        verbose_print(request, 'Couldn\'t set outlet: Request body should be either "on" or "off"')
         return make_response('Request body should be either "on" or "off"', 400)
 
     argmap: Dict[str, object] = {}
@@ -164,8 +166,13 @@ def update_outlet(outlettype: str) -> Response:
         try:
             argmap[k] = cons(request.args.get(k))
         except TypeError:
+            verbose_print(
+                request,
+                f"Couldn't instantiate outlet: Outlet type {outlettype} requires parameter {k} to be of type {objtype}"
+            )
             return make_response(
-                f"Outlet type {outlettype} requires parameter {k} to be of type {objtype}!"
+                f"Outlet type {outlettype} requires parameter {k} to be of type {objtype}!",
+                400,
             )
 
     try:
@@ -177,6 +184,8 @@ def update_outlet(outlettype: str) -> Response:
         else:
             resp = "on" if state else "off"
 
+        verbose_print(request, f"Outlet set to state: {resp}")
         return make_response(resp, 200)
     except Exception as e:
+        verbose_print(request, f"Couldn't set outlet: {str(e)}")
         return make_response(str(e), 400)
