@@ -1,9 +1,10 @@
+import sys
 from contextlib import contextmanager
 from threading import Lock
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
 from .interface import OutletInterface
-from .env import network_timeout
+from .env import network_timeout, verbose_mode
 
 
 if TYPE_CHECKING:
@@ -117,8 +118,13 @@ class NP0XOutlet(OutletInterface):
             for response in iterator:
                 errorIndication, errorStatus, errorIndex, varBinds = response
                 if errorIndication:
+                    if verbose_mode():
+                        print(f"Error querying {self.host} outlet {self.outlet}: {errorIndication}", file=sys.stderr)
                     return None
                 elif errorStatus:
+                    if verbose_mode():
+                        message = str(errorStatus.prettyPrint()) + " at " + str(varBinds[int(errorIndex) - 1] if errorIndex else '?')
+                        print(f"Error querying {self.host} outlet {self.outlet}: {message}", file=sys.stderr)
                     return None
                 else:
                     for varBind in varBinds:
@@ -131,7 +137,12 @@ class NP0XOutlet(OutletInterface):
                             return False
                         elif actual in {1, 257}:
                             return True
+
+                        if verbose_mode():
+                            print(f"Error querying {self.host} outlet {self.outlet}: unrecognized value {actual}", file=sys.stderr)
                         return None
+            if verbose_mode():
+                print(f"Error querying {self.host} outlet {self.outlet}: no response", file=sys.stderr)
             return None
 
     def setState(self, state: bool) -> None:

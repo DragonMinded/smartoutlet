@@ -1,9 +1,10 @@
+import sys
 from contextlib import contextmanager
 from threading import Lock
 from typing import TYPE_CHECKING, ClassVar, Dict, List, Optional, Tuple, cast
 
 from .interface import OutletInterface, param
-from .env import network_timeout
+from .env import network_timeout, verbose_mode
 
 
 if TYPE_CHECKING:
@@ -77,9 +78,9 @@ class SNMPOutlet(OutletInterface):
         self.snmplib = snmplib
         self.rfc1902 = rfc1902
 
-        if type(query_on_value) != type(query_off_value):
+        if type(query_on_value) != type(query_off_value):  # noqa
             raise Exception("Unexpected differing types for query on and off values!")
-        if type(update_on_value) != type(update_off_value):
+        if type(update_on_value) != type(update_off_value):  # noqa
             raise Exception("Unexpected differing types for update on and off values!")
 
         self.engine_cache_lock = Lock()
@@ -192,8 +193,13 @@ class SNMPOutlet(OutletInterface):
             for response in iterator:
                 errorIndication, errorStatus, errorIndex, varBinds = response
                 if errorIndication:
+                    if verbose_mode():
+                        print(f"Error querying {self.host} outlet {self.query_oid}: {errorIndication}", file=sys.stderr)
                     return None
                 elif errorStatus:
+                    if verbose_mode():
+                        message = str(errorStatus.prettyPrint()) + " at " + str(varBinds[int(errorIndex) - 1] if errorIndex else '?')
+                        print(f"Error querying {self.host} outlet {self.query_oid}: {message}", file=sys.stderr)
                     return None
                 else:
                     for varBind in varBinds:
@@ -202,7 +208,12 @@ class SNMPOutlet(OutletInterface):
                             return True
                         if actual == self.query_off_value:
                             return False
+
+                        if verbose_mode():
+                            print(f"Error querying {self.host} outlet {self.query_oid}: unrecognized value {actual}", file=sys.stderr)
                         return None
+            if verbose_mode():
+                print(f"Error querying {self.host} outlet {self.query_oid}: no response", file=sys.stderr)
             return None
 
     def setState(self, state: bool) -> None:

@@ -1,7 +1,8 @@
+import sys
 from typing import Dict, Optional
 
 from .interface import OutletInterface
-from .env import network_timeout
+from .env import network_timeout, verbose_mode
 
 
 class NP0XBOutlet(OutletInterface):
@@ -54,6 +55,8 @@ class NP0XBOutlet(OutletInterface):
                 self.requests.exceptions.ConnectTimeout,
                 self.requests.exceptions.ConnectionError,
             ):
+                if verbose_mode():
+                    print(f"Error querying {self.host} outlet {self.outlet}: connection timeout to host", file=sys.stderr)
                 return None
         else:
             # Shouldn't ever get to the bottom stanza, but lets be sure anyway.
@@ -73,11 +76,18 @@ class NP0XBOutlet(OutletInterface):
                 for child in root:
                     if child.tag == relay:
                         return child.text != "0"
+
+            if verbose_mode():
+                print(f"Error querying {self.host} outlet {self.outlet}: unparseable output {response}", file=sys.stderr)
             return None
 
         if "$" in response:
+            if verbose_mode():
+                print(f"Error querying {self.host} outlet {self.outlet}: unparseable output {response}", file=sys.stderr)
             return None
         if len(response) < (self.outlet - 1):
+            if verbose_mode():
+                print(f"Error querying {self.host} outlet {self.outlet}: unparseable output {response}", file=sys.stderr)
             return None
         return response[-self.outlet] != "0"
 
