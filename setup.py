@@ -8,7 +8,7 @@ with open(os.path.join(dir_path, "README.md"), "r", encoding="utf-8") as fh:
 
 setup(
     name="smartoutlet",
-    version="0.3.9",
+    version="0.3.10",
     description="Collection of utilities for interfacing with various PDUs and smart outlets.",
     long_description=long_description,
     long_description_content_type="text/markdown",
