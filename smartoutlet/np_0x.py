@@ -102,48 +102,51 @@ class NP0XOutlet(OutletInterface):
         return self.rfc1902.Integer(1 if value else 2)
 
     def getState(self) -> Optional[bool]:
-        with self.engine() as engine:
-            iterator = self.snmplib.getCmd(
-                engine,
-                self.snmplib.CommunityData(self.community, mpModel=0),
-                self.snmplib.UdpTransportTarget((self.host, 161), timeout=network_timeout(), retries=2),
-                self.snmplib.ContextData(),
-                self.snmplib.ObjectType(
-                    self.snmplib.ObjectIdentity(
-                        f"1.3.6.1.4.1.21728.2.4.1.2.1.1.3.{self.outlet}"
-                    )
-                ),
-            )
+        for _ in range(3):
+            with self.engine() as engine:
+                iterator = self.snmplib.getCmd(
+                    engine,
+                    self.snmplib.CommunityData(self.community, mpModel=0),
+                    self.snmplib.UdpTransportTarget((self.host, 161), timeout=network_timeout(), retries=2),
+                    self.snmplib.ContextData(),
+                    self.snmplib.ObjectType(
+                        self.snmplib.ObjectIdentity(
+                            f"1.3.6.1.4.1.21728.2.4.1.2.1.1.3.{self.outlet}"
+                        )
+                    ),
+                )
 
-            for response in iterator:
-                errorIndication, errorStatus, errorIndex, varBinds = response
-                if errorIndication:
-                    if verbose_mode():
-                        print(f"Error querying {self.host} outlet {self.outlet}: {errorIndication}", file=sys.stderr)
-                    return None
-                elif errorStatus:
-                    if verbose_mode():
-                        message = str(errorStatus.prettyPrint()) + " at " + str(varBinds[int(errorIndex) - 1] if errorIndex else '?')
-                        print(f"Error querying {self.host} outlet {self.outlet}: {message}", file=sys.stderr)
-                    return None
-                else:
-                    for varBind in varBinds:
-                        actual = self.query(varBind[1])
-
-                        # Yes, this is the documented response, they clearly had a bug
-                        # where they couldn't clear the top bit so the outlets modify
-                        # each other and they just documented it as such.
-                        if actual in {0, 256, 2}:
-                            return False
-                        elif actual in {1, 257}:
-                            return True
-
+                for response in iterator:
+                    errorIndication, errorStatus, errorIndex, varBinds = response
+                    if errorIndication:
                         if verbose_mode():
-                            print(f"Error querying {self.host} outlet {self.outlet}: unrecognized value {actual}", file=sys.stderr)
+                            print(f"Error querying {self.host} outlet {self.outlet}: {errorIndication}", file=sys.stderr)
+                        continue
+                    elif errorStatus:
+                        if verbose_mode():
+                            message = str(errorStatus.prettyPrint()) + " at " + str(varBinds[int(errorIndex) - 1] if errorIndex else '?')
+                            print(f"Error querying {self.host} outlet {self.outlet}: {message}", file=sys.stderr)
+                        # This is a varbind or syntax error, we can't really retry this.
                         return None
-            if verbose_mode():
-                print(f"Error querying {self.host} outlet {self.outlet}: no response", file=sys.stderr)
-            return None
+                    else:
+                        for varBind in varBinds:
+                            actual = self.query(varBind[1])
+
+                            # Yes, this is the documented response, they clearly had a bug
+                            # where they couldn't clear the top bit so the outlets modify
+                            # each other and they just documented it as such.
+                            if actual in {0, 256, 2}:
+                                return False
+                            elif actual in {1, 257}:
+                                return True
+
+                            if verbose_mode():
+                                print(f"Error querying {self.host} outlet {self.outlet}: unrecognized value {actual}", file=sys.stderr)
+                            return None
+
+        if verbose_mode():
+            print(f"Error querying {self.host} outlet {self.outlet}: no successful response in 3 retries", file=sys.stderr)
+        return None
 
     def setState(self, state: bool) -> None:
         with self.engine() as engine:

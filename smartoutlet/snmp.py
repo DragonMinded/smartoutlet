@@ -181,40 +181,43 @@ class SNMPOutlet(OutletInterface):
         )
 
     def getState(self) -> Optional[bool]:
-        with self.engine() as engine:
-            iterator = self.snmplib.getCmd(
-                engine,
-                self.snmplib.CommunityData(self.read_community, mpModel=0),
-                self.snmplib.UdpTransportTarget((self.host, 161), timeout=network_timeout(), retries=2),
-                self.snmplib.ContextData(),
-                self.snmplib.ObjectType(self.snmplib.ObjectIdentity(self.query_oid)),
-            )
+        for _ in range(3):
+            with self.engine() as engine:
+                iterator = self.snmplib.getCmd(
+                    engine,
+                    self.snmplib.CommunityData(self.read_community, mpModel=0),
+                    self.snmplib.UdpTransportTarget((self.host, 161), timeout=network_timeout(), retries=2),
+                    self.snmplib.ContextData(),
+                    self.snmplib.ObjectType(self.snmplib.ObjectIdentity(self.query_oid)),
+                )
 
-            for response in iterator:
-                errorIndication, errorStatus, errorIndex, varBinds = response
-                if errorIndication:
-                    if verbose_mode():
-                        print(f"Error querying {self.host} outlet {self.query_oid}: {errorIndication}", file=sys.stderr)
-                    return None
-                elif errorStatus:
-                    if verbose_mode():
-                        message = str(errorStatus.prettyPrint()) + " at " + str(varBinds[int(errorIndex) - 1] if errorIndex else '?')
-                        print(f"Error querying {self.host} outlet {self.query_oid}: {message}", file=sys.stderr)
-                    return None
-                else:
-                    for varBind in varBinds:
-                        actual = self.query(varBind[1])
-                        if actual == self.query_on_value:
-                            return True
-                        if actual == self.query_off_value:
-                            return False
-
+                for response in iterator:
+                    errorIndication, errorStatus, errorIndex, varBinds = response
+                    if errorIndication:
                         if verbose_mode():
-                            print(f"Error querying {self.host} outlet {self.query_oid}: unrecognized value {actual}", file=sys.stderr)
+                            print(f"Error querying {self.host} outlet {self.query_oid}: {errorIndication}", file=sys.stderr)
+                        continue
+                    elif errorStatus:
+                        if verbose_mode():
+                            message = str(errorStatus.prettyPrint()) + " at " + str(varBinds[int(errorIndex) - 1] if errorIndex else '?')
+                            print(f"Error querying {self.host} outlet {self.query_oid}: {message}", file=sys.stderr)
+                        # This is a varbind or syntax error, we can't really retry this.
                         return None
-            if verbose_mode():
-                print(f"Error querying {self.host} outlet {self.query_oid}: no response", file=sys.stderr)
-            return None
+                    else:
+                        for varBind in varBinds:
+                            actual = self.query(varBind[1])
+                            if actual == self.query_on_value:
+                                return True
+                            if actual == self.query_off_value:
+                                return False
+
+                            if verbose_mode():
+                                print(f"Error querying {self.host} outlet {self.query_oid}: unrecognized value {actual}", file=sys.stderr)
+                            return None
+
+        if verbose_mode():
+            print(f"Error querying {self.host} outlet {self.query_oid}: no successful response in 3 retries", file=sys.stderr)
+        return None
 
     def setState(self, state: bool) -> None:
         with self.engine() as engine:
