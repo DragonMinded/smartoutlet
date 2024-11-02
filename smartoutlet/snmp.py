@@ -1,4 +1,5 @@
 import sys
+import time
 from contextlib import contextmanager
 from threading import Lock
 from typing import TYPE_CHECKING, ClassVar, Dict, List, Optional, Tuple, cast
@@ -196,6 +197,7 @@ class SNMPOutlet(OutletInterface):
                     if errorIndication:
                         if verbose_mode():
                             print(f"Error querying {self.host} outlet {self.query_oid}: {errorIndication}", file=sys.stderr)
+                        time.sleep(0.100)
                         continue
                     elif errorStatus:
                         if verbose_mode():

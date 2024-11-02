@@ -1,4 +1,5 @@
 import sys
+import time
 from typing import Dict, Optional
 
 from .interface import OutletInterface
@@ -67,6 +68,7 @@ class NP0XBOutlet(OutletInterface):
             response = self.__getResponseImpl(uri)
             if response is not None:
                 return response
+            time.sleep(0.100)
         return None
 
     def getState(self, force_legacy: bool = False) -> Optional[bool]:
