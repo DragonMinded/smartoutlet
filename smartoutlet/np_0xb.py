@@ -109,7 +109,7 @@ class NP0XBOutlet(OutletInterface):
             if verbose_mode():
                 print(f"Error querying {self.host} outlet {self.outlet}: unparseable output {response}", file=sys.stderr)
             return None
-        return response[-self.outlet] != "0"
+        return response[-self.outlet] == "1"
 
     def setState(self, state: bool) -> None:
         response = self.__getResponse(
