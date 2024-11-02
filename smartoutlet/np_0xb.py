@@ -37,27 +37,44 @@ class NP0XBOutlet(OutletInterface):
             "password": self.password,
         }
 
+    def __getResponseImpl(self, uri: str) -> Optional[str]:
+        try:
+            resp = self.requests.get(uri, timeout=network_timeout())
+            response = resp.content.decode("utf-8").strip()
+
+            if resp.status_code != 200:
+                if verbose_mode():
+                    print(
+                        f"Error talking to {self.host} outlet {self.outlet}: outlet returned {resp.status_code} with response {response}",
+                        file=sys.stderr,
+                    )
+                return None
+
+            return response
+        except (
+            self.requests.exceptions.ConnectTimeout,
+            self.requests.exceptions.ConnectionError,
+        ):
+            if verbose_mode():
+                print(f"Error talking to {self.host} outlet {self.outlet}: connection timeout to host", file=sys.stderr)
+            return None
+
+    def __getResponse(self, uri: str, retries: int = 0) -> Optional[str]:
+        if retries < 0:
+            retries = 0
+
+        for _ in range(retries + 1):
+            response = self.__getResponseImpl(uri)
+            if response is not None:
+                return response
+        return None
+
     def getState(self, force_legacy: bool = False) -> Optional[bool]:
         # We allow a force-legacy option here, because we call getState from within
         # setState, and if we have to call this we already know that it's a legacy
         # NP-0XB. So, stop wasting time figuring that out a second time!
         if not force_legacy:
-            try:
-                response = (
-                    self.requests.get(
-                        f"http://{self.username}:{self.password}@{self.host}/cmd.cgi?$A5",
-                        timeout=network_timeout(),
-                    )
-                    .content.decode("utf-8")
-                    .strip()
-                )
-            except (
-                self.requests.exceptions.ConnectTimeout,
-                self.requests.exceptions.ConnectionError,
-            ):
-                if verbose_mode():
-                    print(f"Error querying {self.host} outlet {self.outlet}: connection timeout to host", file=sys.stderr)
-                return None
+            response = self.__getResponse(f"http://{self.username}:{self.password}@{self.host}/cmd.cgi?$A5", retries=2) or "$"
         else:
             # Shouldn't ever get to the bottom stanza, but lets be sure anyway.
             response = "$"
@@ -66,16 +83,19 @@ class NP0XBOutlet(OutletInterface):
         # it doesn't respond to the correct documented protocol.
         if force_legacy or response == "Success!":
             relay = f"rly{self.outlet - 1}"
-            response = self.requests.get(
+            response = self.__getResponse(
                 f"http://{self.username}:{self.password}@{self.host}/status.xml",
-                timeout=network_timeout(),
-            ).content.decode("utf-8")
+                retries=2,
+            ) or ""
 
-            root = self.ET.fromstring(response)
-            if root.tag == "response":
-                for child in root:
-                    if child.tag == relay:
-                        return child.text != "0"
+            try:
+                root = self.ET.fromstring(response)
+                if root.tag == "response":
+                    for child in root:
+                        if child.tag == relay:
+                            return child.text != "0"
+            except self.ET.ParseError:
+                pass
 
             if verbose_mode():
                 print(f"Error querying {self.host} outlet {self.outlet}: unparseable output {response}", file=sys.stderr)
@@ -89,23 +109,15 @@ class NP0XBOutlet(OutletInterface):
             if verbose_mode():
                 print(f"Error querying {self.host} outlet {self.outlet}: unparseable output {response}", file=sys.stderr)
             return None
+        if verbose_mode():
+            print(f"Parsing response from {self.host} outlet {self.outlet}: {response}", file=sys.stderr)
         return response[-self.outlet] != "0"
 
     def setState(self, state: bool) -> None:
-        try:
-            response = (
-                self.requests.get(
-                    f"http://{self.username}:{self.password}@{self.host}/cmd.cgi?$A3 {self.outlet} {'1' if state else '0'}",
-                    timeout=network_timeout(),
-                )
-                .content.decode("utf-8")
-                .strip()
-            )
-        except (
-            self.requests.exceptions.ConnectTimeout,
-            self.requests.exceptions.ConnectionError,
-        ):
-            return
+        response = self.__getResponse(
+            f"http://{self.username}:{self.password}@{self.host}/cmd.cgi?$A3 {self.outlet} {'1' if state else '0'}",
+            retries=0,
+        ) or ""
 
         if response == "Success!":
             # This outlet is not responding to the correct documented protocol,
@@ -116,14 +128,8 @@ class NP0XBOutlet(OutletInterface):
                 return
 
             if actual != state:
-                try:
-                    # Need to toggle
-                    self.requests.get(
-                        f"http://{self.username}:{self.password}@{self.host}/cmd.cgi?rly={self.outlet - 1}",
-                        timeout=network_timeout(),
-                    )
-                except (
-                    self.requests.exceptions.ConnectTimeout,
-                    self.requests.exceptions.ConnectionError,
-                ):
-                    pass
+                # Need to toggle
+                self.__getResponse(
+                    f"http://{self.username}:{self.password}@{self.host}/cmd.cgi?rly={self.outlet - 1}",
+                    retries=0,
+                )
