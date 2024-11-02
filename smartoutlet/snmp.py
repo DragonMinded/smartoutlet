@@ -185,7 +185,7 @@ class SNMPOutlet(OutletInterface):
             iterator = self.snmplib.getCmd(
                 engine,
                 self.snmplib.CommunityData(self.read_community, mpModel=0),
-                self.snmplib.UdpTransportTarget((self.host, 161), timeout=network_timeout(), retries=0),
+                self.snmplib.UdpTransportTarget((self.host, 161), timeout=network_timeout(), retries=2),
                 self.snmplib.ContextData(),
                 self.snmplib.ObjectType(self.snmplib.ObjectIdentity(self.query_oid)),
             )

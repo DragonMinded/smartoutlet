@@ -106,7 +106,7 @@ class NP0XOutlet(OutletInterface):
             iterator = self.snmplib.getCmd(
                 engine,
                 self.snmplib.CommunityData(self.community, mpModel=0),
-                self.snmplib.UdpTransportTarget((self.host, 161), timeout=network_timeout(), retries=0),
+                self.snmplib.UdpTransportTarget((self.host, 161), timeout=network_timeout(), retries=2),
                 self.snmplib.ContextData(),
                 self.snmplib.ObjectType(
                     self.snmplib.ObjectIdentity(
