@@ -8,6 +8,13 @@ def network_timeout() -> float:
         return 1.0
 
 
+def network_retries() -> int:
+    try:
+        return int(os.environ.get("NETWORK_RETRIES", "2"))
+    except TypeError:
+        return 2
+
+
 def verbose_mode() -> bool:
     try:
         return bool(os.environ.get("VERBOSE_LOGGING", ""))

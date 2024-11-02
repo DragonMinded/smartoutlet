@@ -5,7 +5,7 @@ from threading import Lock
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
 from .interface import OutletInterface
-from .env import network_timeout, verbose_mode
+from .env import network_retries, network_timeout, verbose_mode
 
 
 if TYPE_CHECKING:
@@ -103,12 +103,12 @@ class NP0XOutlet(OutletInterface):
         return self.rfc1902.Integer(1 if value else 2)
 
     def getState(self) -> Optional[bool]:
-        for _ in range(3):
+        for _ in range(network_retries() + 1):
             with self.engine() as engine:
                 iterator = self.snmplib.getCmd(
                     engine,
                     self.snmplib.CommunityData(self.community, mpModel=0),
-                    self.snmplib.UdpTransportTarget((self.host, 161), timeout=network_timeout(), retries=2),
+                    self.snmplib.UdpTransportTarget((self.host, 161), timeout=network_timeout(), retries=0),
                     self.snmplib.ContextData(),
                     self.snmplib.ObjectType(
                         self.snmplib.ObjectIdentity(
@@ -147,7 +147,7 @@ class NP0XOutlet(OutletInterface):
                             return None
 
         if verbose_mode():
-            print(f"Error querying {self.host} outlet {self.outlet}: no successful response in 3 retries", file=sys.stderr)
+            print(f"Error querying {self.host} outlet {self.outlet}: no successful response in {network_retries() + 1} retries", file=sys.stderr)
         return None
 
     def setState(self, state: bool) -> None:

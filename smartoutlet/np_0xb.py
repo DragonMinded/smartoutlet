@@ -3,7 +3,7 @@ import time
 from typing import Dict, Optional
 
 from .interface import OutletInterface
-from .env import network_timeout, verbose_mode
+from .env import network_retries, network_timeout, verbose_mode
 
 
 class NP0XBOutlet(OutletInterface):
@@ -76,7 +76,7 @@ class NP0XBOutlet(OutletInterface):
         # setState, and if we have to call this we already know that it's a legacy
         # NP-0XB. So, stop wasting time figuring that out a second time!
         if not force_legacy:
-            response = self.__getResponse(f"http://{self.username}:{self.password}@{self.host}/cmd.cgi?$A5", retries=2) or "$"
+            response = self.__getResponse(f"http://{self.username}:{self.password}@{self.host}/cmd.cgi?$A5", retries=network_retries()) or "$"
         else:
             # Shouldn't ever get to the bottom stanza, but lets be sure anyway.
             response = "$"
@@ -87,7 +87,7 @@ class NP0XBOutlet(OutletInterface):
             relay = f"rly{self.outlet - 1}"
             response = self.__getResponse(
                 f"http://{self.username}:{self.password}@{self.host}/status.xml",
-                retries=2,
+                retries=network_retries(),
             ) or ""
 
             try:
