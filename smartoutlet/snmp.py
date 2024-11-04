@@ -1,3 +1,4 @@
+import random
 import sys
 import time
 from contextlib import contextmanager
@@ -5,7 +6,7 @@ from threading import Lock
 from typing import TYPE_CHECKING, ClassVar, Dict, List, Optional, Tuple, cast
 
 from .interface import OutletInterface, param
-from .env import network_retries, network_timeout, verbose_mode
+from .env import network_jitter, network_retries, network_timeout, network_wait, verbose_mode
 
 
 if TYPE_CHECKING:
@@ -197,7 +198,7 @@ class SNMPOutlet(OutletInterface):
                     if errorIndication:
                         if verbose_mode():
                             print(f"Error querying {self.host} outlet {self.query_oid}: {errorIndication}", file=sys.stderr)
-                        time.sleep(0.100)
+                        time.sleep(network_wait() + (network_jitter() * random.random()))
                         continue
                     elif errorStatus:
                         if verbose_mode():

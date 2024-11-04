@@ -1,9 +1,10 @@
+import random
 import sys
 import time
 from typing import Dict, Optional
 
 from .interface import OutletInterface
-from .env import network_retries, network_timeout, verbose_mode
+from .env import network_jitter, network_retries, network_timeout, network_wait, verbose_mode
 
 
 class NP0XBOutlet(OutletInterface):
@@ -68,7 +69,7 @@ class NP0XBOutlet(OutletInterface):
             response = self.__getResponseImpl(uri)
             if response is not None:
                 return response
-            time.sleep(0.100)
+            time.sleep(network_wait() + (network_jitter() * random.random()))
         return None
 
     def getState(self, force_legacy: bool = False) -> Optional[bool]:
