@@ -100,7 +100,7 @@ See generic help on how to use hosthttpserver:
 
 ### Sample Home Assistant Configuration
 
-The following is an exapmle for how to hook up a RESTful switch in Home Assistant using the above HTTP server hosted on port 44444 of the same device running Home Assistant. The example is identical to the CLI example in that it assumes a NP-02B PDU with IP 192.168.0.50 where the thing we want to control is located on outlet #2. You can place this section directly in your configuration.yaml file. Be sure to validate your configuration before reloading!
+The following is an example for how to hook up a RESTful switch in Home Assistant using the above HTTP server hosted on port 44444 of the same device running Home Assistant. The example is identical to the CLI example in that it assumes a NP-02B PDU with IP 192.168.0.50 where the thing we want to control is located on outlet #2. You can place this section directly in your configuration.yaml file. Be sure to validate your configuration before reloading!
 
 ```
 switch:
